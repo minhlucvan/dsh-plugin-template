@@ -1,5 +1,6 @@
 /**
  * Optional tool-registration companion for `@your-scope/dsh-plugin-template`.
+ *
  * @module @your-scope/dsh-plugin-template/tools
  */
 
@@ -28,6 +29,7 @@ const inject = ['tools']
  * The output schema is an open object, so each field is `unknown` at the type
  * level. Narrowing it here keeps the renderer total: a renderer that can throw
  * turns a malformed value into a failed call instead of a bad line.
+ *
  * @param value - The canonical value the output schema validated.
  * @returns The echoed text, or the empty string when it is absent.
  */
@@ -59,9 +61,10 @@ function isToolRegistry(value: unknown): value is ToolRegistry {
  * Resolve the host registry through Cordis's named service lookup. Keeping this
  * narrow local contract lets the template build without host source files; a
  * composed DSH profile still supplies the real `tools` service.
+ *
  * @param ctx - Cordis context carrying the host service.
- * @returns the host tool registry.
- * @throws {Error} when the companion is loaded without its host service.
+ * @returns The host tool registry.
+ * @throws {Error} When the companion is loaded without its host service.
  */
 function getToolRegistry(ctx: Context): ToolRegistry {
   const registry = ctx.get('tools')
@@ -88,13 +91,14 @@ function apply(ctx: Context): void {
       defineTool({
         name: 'template_echo',
         description:
-          'Echo a message back through the host. Demonstrates the tool contract: a ' +
-          'per-property parameter schema, an enforced output schema, and a pure ' +
-          'renderer that turns one validated value into model-facing content.',
+          'Echo a message back through the host. Demonstrates the tool contract: a '
+          + 'per-property parameter schema, an enforced output schema, and a pure '
+          + 'renderer that turns one validated value into model-facing content.',
         parameters: {
           message: {
             type: 'string',
-            description: 'Text to echo. Defaults to the configured load message.',
+            description:
+              'Text to echo. Defaults to the configured load message.',
           },
         },
         output: {

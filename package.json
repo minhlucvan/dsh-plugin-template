@@ -32,6 +32,10 @@
       "types": "./lib/index.d.ts",
       "default": "./lib/index.js"
     },
+    "./client": {
+      "types": "./lib/client.d.ts",
+      "default": "./lib/client.js"
+    },
     "./invariant": {
       "types": "./lib/invariant.d.ts",
       "default": "./lib/invariant.js"
@@ -51,10 +55,19 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ]
     }
   },
   "scripts": {
-    "build": "tsdown --config-loader unrun --config tsdown.config.ts",
+    "build": "tsdown --config-loader unrun --config tsdown.config.ts && tsdown --config-loader unrun --config tsdown.client.config.ts && node scripts/wrap-client.mjs && node scripts/verify-client.mjs",
+    "build:host": "tsdown --config-loader unrun --config tsdown.config.ts",
+    "build:client": "tsdown --config-loader unrun --config tsdown.client.config.ts && node scripts/wrap-client.mjs && node scripts/verify-client.mjs",
     "fmt": "oxfmt --config .oxfmtrc.json --write src tests",
     "fmt:check": "oxfmt --config .oxfmtrc.json --check src tests",
     "lint": "oxlint --config .oxlintrc.json --type-check --deny-warnings src tests",
@@ -88,10 +101,12 @@
     "@deepseek-ai/schemastery": "3.18.2",
     "@tsconfig/node24": "^24.0.5",
     "@types/node": "^22.20.0",
+    "@types/react": "^19.3.0",
     "cordis": "^4.0.0-rc.7",
     "oxfmt": "0.64.0",
     "oxlint": "1.76.0",
     "oxlint-tsgolint": "7.0.2001",
+    "react": "^19.3.0",
     "tsdown": "^0.22.2",
     "typescript": "^6.0.3",
     "unrun": "^0.3.1",

@@ -2,6 +2,7 @@
   "extends": "@tsconfig/node24/tsconfig.json",
   "compilerOptions": {
     "target": "ES2024",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "sourceMap": true,
@@ -10,6 +11,7 @@
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
     "verbatimModuleSyntax": false,
+    "jsx": "react-jsx",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
@@ -17,7 +19,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "types": ["node"],
+    "types": ["node", "react"],
     "ignoreDeprecations": "6.0"
   },
   "include": ["src", "tests"]

@@ -39,6 +39,7 @@ Keep each concern in its documented owner instead of letting files sprawl:
 | `src/index.ts` | Loader-facing plugin namespace: `name`, `inject`, `Config`, `apply` re-exports only |
 | `src/config.ts` | Serializable Schemastery schema, defaults, `resolveConfig` for direct callers |
 | `src/runtime.ts` | Fakeable host boundary (`PluginRuntime`) and Cordis activation |
+| `src/client/` | Browser face: slot registration, locale dictionaries, settings model and page |
 | `src/invariant.ts` | Optional `./invariant` companion for the host `invariants` service |
 | `src/routes.ts` | Optional `./routes` companion serving HTTP endpoints through `ctx.webServer` |
 | `src/tools.ts` | Optional `./tools` companion that registers tools through `ctx.tools` |

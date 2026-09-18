@@ -1,12 +1,17 @@
 /**
  * Optional HTTP-route companion for `@your-scope/dsh-plugin-template`.
+ *
  * @module @your-scope/dsh-plugin-template/routes
  */
 
-import type { Context } from '@deepseek-ai/cordis'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
-/** Route match kind: `exact` matches the pathname verbatim; `prefix` matches it and its subtree. */
+import type { Context } from '@deepseek-ai/cordis'
+
+/**
+ * Route match kind: `exact` matches the pathname verbatim; `prefix` matches it
+ * and its subtree.
+ */
 type RouteKind = 'exact' | 'prefix'
 
 /** One named route registration, as the host's browser carrier accepts it. */
@@ -25,7 +30,8 @@ interface WebRoute {
  * The host's real service is richer — upgrade routes, a fallback seat, index
  * taps — but a companion that only adds one JSON endpoint must not depend on
  * the whole surface. Keeping the contract narrow is what lets this package
- * build and test against a fake while a composed profile supplies the real one.
+ * build and test against a fake while a composed profile supplies the real
+ * one.
  */
 interface WebServerLike {
   register: (route: WebRoute) => () => void
@@ -55,9 +61,10 @@ function isWebServerLike(value: unknown): value is WebServerLike {
 
 /**
  * Resolve the host's browser carrier through Cordis's named service lookup.
+ *
  * @param ctx - Cordis context carrying the host service.
- * @returns the host web server.
- * @throws {Error} when the companion is loaded without its host service.
+ * @returns The host web server.
+ * @throws {Error} When the companion is loaded without its host service.
  */
 function getWebServer(ctx: Context): WebServerLike {
   const webServer: unknown = ctx.get('webServer')
@@ -73,6 +80,7 @@ function getWebServer(ctx: Context): WebServerLike {
  * `content-length` is set from the encoded byte length rather than the string
  * length, so a payload containing multi-byte characters is not truncated by a
  * length that counted characters.
+ *
  * @param res - The response to own.
  * @param body - Any JSON-serializable value.
  */
@@ -87,8 +95,9 @@ function writeJson(res: ServerResponse, body: unknown): void {
 
 /**
  * Register this package's HTTP routes.
+ *
  * @param ctx - Cordis context carrying the browser-carrier service.
- * @returns the route registration's disposer after setup succeeds.
+ * @returns The route registration's disposer after setup succeeds.
  */
 async function apply(ctx: Context): Promise<() => void> {
   const webServer = getWebServer(ctx)

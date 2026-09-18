@@ -1,5 +1,6 @@
 /**
  * Package-owned invariant companion for `@your-scope/dsh-plugin-template`.
+ *
  * @module @your-scope/dsh-plugin-template/invariant
  */
 
@@ -11,9 +12,15 @@ const PACKAGE_NAME = '@your-scope/dsh-plugin-template'
 type InvariantFailure = (message: string) => never
 
 /** Installer callback accepted by the host's invariant registry. */
-type InvariantInstaller = (ctx: Context, fail: InvariantFailure) => void | Promise<void>
+type InvariantInstaller = (
+  ctx: Context,
+  fail: InvariantFailure,
+) => void | Promise<void>
 
-/** Minimal runtime contract used by the companion without a host source checkout. */
+/**
+ * Minimal runtime contract used by the companion without a host source
+ * checkout.
+ */
 interface InvariantRegistry {
   register: (packageName: string, installer: InvariantInstaller) => () => void
 }
@@ -49,22 +56,26 @@ function isInvariantRegistry(value: unknown): value is InvariantRegistry {
  * Resolve the host registry through Cordis's named service lookup. Keeping this
  * narrow local contract lets the template build without host source files; a
  * composed DSH profile still supplies the real `invariants` service.
+ *
  * @param ctx - Cordis context carrying the host service.
- * @returns the host invariant registry.
- * @throws {Error} when the companion is loaded without its host service.
+ * @returns The host invariant registry.
+ * @throws {Error} When the companion is loaded without its host service.
  */
 function getInvariantRegistry(ctx: InvariantContext): InvariantRegistry {
   const registry = ctx.get('invariants')
   if (!isInvariantRegistry(registry)) {
-    throw new Error(`invariant companion requires the "invariants" service for ${PACKAGE_NAME}`)
+    throw new Error(
+      `invariant companion requires the "invariants" service for ${PACKAGE_NAME}`,
+    )
   }
   return registry
 }
 
 /**
  * Register this package's invariant companion.
+ *
  * @param ctx - Cordis context carrying the invariant service.
- * @returns the installed registration's disposer after setup succeeds.
+ * @returns The installed registration's disposer after setup succeeds.
  */
 async function apply(ctx: Context): Promise<() => void> {
   const disposer = getInvariantRegistry(ctx).register(PACKAGE_NAME, install)

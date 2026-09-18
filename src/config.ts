@@ -1,5 +1,6 @@
 /**
  * Serializable configuration, schema, and direct-call defaults.
+ *
  * @module @your-scope/dsh-plugin-template/config
  */
 
@@ -24,6 +25,7 @@ const Config: schema<Config> = schema.object({
 
 /**
  * Resolve the same defaults for direct callers that bypass Cordis Loader.
+ *
  * @param config - Partial serialized configuration.
  * @returns Configuration with all template defaults applied.
  */

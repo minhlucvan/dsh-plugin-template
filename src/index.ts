@@ -1,5 +1,6 @@
 /**
  * Standalone function plugin for DeepSeek Harness.
+ *
  * @module @your-scope/dsh-plugin-template
  */
 

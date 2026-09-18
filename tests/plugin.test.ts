@@ -19,12 +19,14 @@ interface PluginExports {
 }
 
 function isPluginExports(value: unknown): value is PluginExports {
-  return typeof value === 'object'
+  return (
+    typeof value === 'object'
     && value !== null
     && 'name' in value
     && 'inject' in value
     && 'Config' in value
     && 'apply' in value
+  )
 }
 
 function createLoader(): LoaderPlugin {
@@ -85,7 +87,9 @@ async function testRegistersInvariantCompanion(): Promise<void> {
   const fiber = await ctx.plugin(invariant)
   expect(register).toHaveBeenCalledTimes(EXPECTED_SINGLE_CALL)
   expect(register.mock.calls[FIRST_INDEX]?.[FIRST_INDEX]).toBe(PACKAGE_NAME)
-  expect(register.mock.calls[FIRST_INDEX]?.[SECOND_INDEX]).toBeTypeOf('function')
+  expect(register.mock.calls[FIRST_INDEX]?.[SECOND_INDEX]).toBeTypeOf(
+    'function',
+  )
 
   await fiber.dispose()
   expect(unregister).toHaveBeenCalledTimes(EXPECTED_SINGLE_CALL)
@@ -111,7 +115,10 @@ async function testRegistersToolCompanion(): Promise<void> {
 
   const fiber = await ctx.plugin(tools)
   expect(register).toHaveBeenCalledTimes(EXPECTED_SINGLE_CALL)
-  assertToolName(register.mock.calls[FIRST_INDEX]?.[FIRST_INDEX], 'template_echo')
+  assertToolName(
+    register.mock.calls[FIRST_INDEX]?.[FIRST_INDEX],
+    'template_echo',
+  )
 
   await fiber.dispose()
   expect(unregister).toHaveBeenCalledTimes(EXPECTED_SINGLE_CALL)

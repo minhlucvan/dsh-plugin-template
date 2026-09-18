@@ -20,8 +20,11 @@ Normal npm dependencies are resolved from the package registry. A DSH host is a 
 │   └── README.md                 # Dependency and DSH-host patch contract
 ├── scripts/
 │   ├── extract-patch.mjs         # Config-driven host patch regeneration (see patches/README.md)
-│   └── patch.sh                  # Idempotent host patch application
+│   ├── patch.sh                  # Idempotent host patch application
+│   ├── wrap-client.mjs           # Wraps the client bundle in the ModuleLoader envelope
+│   └── verify-client.mjs         # Loads the built client through a loader shim
 ├── src/
+│   ├── client/                   # Browser face: slots, locale, settings, page
 │   ├── README.md                 # Growth rules for services and feature modules
 │   ├── config.ts                 # Serializable schema and resolved defaults
 │   ├── index.ts                  # Loader-facing function-plugin namespace
@@ -31,6 +34,8 @@ Normal npm dependencies are resolved from the package registry. A DSH host is a 
 │   └── tools.ts                  # Tool-registration companion over ctx.tools
 ├── tests/
 │   ├── README.md                 # Harness, feature-test, and snapshot conventions
+│   ├── client.test.ts            # Settings normalization, receiver binding, locale parity
+│   ├── client-registration.test.ts  # Slot registration and fiber disposal
 │   ├── harness.ts                # Shared real-Cordis test mount
 │   ├── plugin.test.ts            # Loader exports, activation, and companion disposal
 │   └── snapshots/
@@ -123,6 +128,48 @@ The package manifest declares the bundle patch:
 A DSH host may install this package into a profile and apply `cordis.patch.yml` over its own runtime composition. That host integration is intentionally outside this repository's build and test inputs. The patch composes plugins; it does not alter host source, compiler settings, build scripts, or catalogs.
 
 The invariant companion uses a narrow local interface for the host's `invariants` service. This keeps the package build independent of the host's private source package while preserving the runtime registration used by an invariants-enabled DSH profile. Insert its bundle row only when the consuming profile provides that service; ordinary `dsh-base`/`dsh-web-app` profiles should omit the row.
+
+## Client face
+
+A package may contribute browser UI as well as host behaviour. This template does,
+in `src/client/`, and the build differs from the host entries in three ways worth
+knowing before you copy it.
+
+**The artifact is not an ES module.** The host evaluates a plugin's client file and
+expects it to call `window.__ModuleLoader__.load({ id, factory })`, where the
+factory behaves like CommonJS: it receives a `require` resolving the host's own
+modules and returns the plugin's exports. So `pnpm run build` does not finish at
+the bundler — `scripts/wrap-client.mjs` wraps the CommonJS intermediate in that
+envelope, and renames the declaration that tsdown suffixes as `.d.cts`.
+
+**The format is CommonJS and React is external.** `tsdown.client.config.ts` builds
+the client separately: `format: ['cjs']`, a browser target, and `deps.neverBundle`
+for `react` and `react/jsx-runtime`, which the host supplies. Declaring React as a
+`devDependency` is correct — it is needed to build and typecheck, never to ship.
+
+**A successful build is not evidence the UI works.** `scripts/verify-client.mjs`
+installs a `__ModuleLoader__` shim, supplies the host modules, imports the artifact,
+and asserts the loader id and the `apply` / `inject` / `name` exports. An artifact
+can build, pack and ship while failing every one of those steps, and the only
+symptom is a panel that never appears.
+
+Two tsconfig settings are load-bearing and easy to lose. `"types"` must include
+`"react"`, or no JSX types resolve and `event.target.value` reports as missing on
+`HTMLInputElement`. And `"lib"` must include `DOM`, which `@tsconfig/node24` does
+not set — without it the DOM types are error-typed and every event handler is
+`any`.
+
+Wire the browser half with `dsh.client` in `package.json`, naming the host client
+packages whose services the entry injects:
+
+```json
+{
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": { "platform": "web", "inject": ["@deepseek-ai/dsh-client-locale"] }
+  }
+}
+```
 
 ## Plugin forms
 

@@ -66,6 +66,22 @@
     // 与 vitest/require-hook 冲突
     "vitest/no-hooks": "off", // Style
 
+    // Browser event handlers are synchronous by contract, so an async handler
+    // hands React a promise it ignores. `void promise()` is the standard way to
+    // say "deliberately not awaited", but the bare rule bans the operator
+    // outright — which would leave no way to write a fire-and-forget call that
+    // satisfies no-floating-promises without a `.then` chain that
+    // promise/prefer-await-to-then rejects. Allowing it as a *statement* keeps
+    // both type rules on and the intent explicit at the call site.
+    "no-void": ["error", { "allowAsStatement": true }], // Restriction
+
+    // The host's browser API is callback-based by design — `slots.inject(name,
+    // callback)` runs the callback once the slot exists, which is the only way
+    // to register before that point. Neither the real seam nor a faithful fake
+    // for it can avoid taking a callback, and re-shaping a host contract to suit
+    // a lint rule is not this package's call to make.
+    "promise/prefer-await-to-callbacks": "off", // Restriction
+
     "eslint/max-lines": [
       "error",
       {
