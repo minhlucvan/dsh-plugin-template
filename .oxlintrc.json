@@ -99,5 +99,22 @@
       "error",
       60
     ], // Style
-  }
+  },
+  "overrides": [
+    {
+      "files": ["tests/**/*.ts", "tests/**/*.tsx"],
+      "rules": {
+        // `prefer-strict-boolean-matchers` and `prefer-to-be-falsy` /
+        // `prefer-to-be-truthy` demand opposite spellings of the same
+        // assertion. Under `typeAware: true` the conflict is unresolvable:
+        // `toBe(true)` is rejected because the receiver is not a boolean
+        // literal, and `toBeTruthy()` is rejected as truthy/falsy coercion.
+        // The strict matcher is the one worth keeping — it catches an assertion
+        // that passes for the wrong reason — so the two coercion rules are off
+        // for tests, where asserting an exact boolean is the point.
+        "vitest/prefer-to-be-falsy": "off",
+        "vitest/prefer-to-be-truthy": "off",
+      }
+    }
+  ]
 }

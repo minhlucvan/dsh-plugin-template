@@ -7,6 +7,10 @@ activation, and disposal evidence. The remaining suites own one face each:
   companions, including registration and fiber disposal;
 - `tests/client.test.ts`: settings normalization, receiver binding, and locale
   dictionary parity;
+- `tests/client-store.test.ts`: store transitions and host-scope sync, in the
+  `node` project because the store imports no React;
+- `tests/client-components.test.tsx`: the provider, hooks, and components in a
+  real React tree, in the `dom` project;
 - `tests/client-registration.test.ts`: slot registration and fiber disposal;
 - `tests/harness.ts`: the shared real-Cordis mount with an observable fake host
   boundary.

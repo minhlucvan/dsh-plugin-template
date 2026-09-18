@@ -24,7 +24,17 @@
 │   ├── wrap-client.mjs           # 把 client bundle 包进 ModuleLoader envelope
 │   └── verify-client.mjs         # 通过 loader shim 加载构建后的 client 产物
 ├── src/
-│   ├── client/                   # 浏览器侧:slot、locale、settings、page
+│   ├── client/                   # 浏览器面
+│   │   ├── store.ts              # zustand store:设置状态与 action
+│   │   ├── context.tsx           # 每实例 store 的 provider 与其读取器
+│   │   ├── hooks.ts              # 组件使用的读取路径
+│   │   ├── settings-section.tsx  # 布局,组合下面各部分
+│   │   ├── message-field.tsx     # 展示型字段,通过 hook 取状态
+│   │   ├── save-controls.tsx     # 提交与重置,通过 hook 取状态
+│   │   ├── settings-page.tsx     # slot 接缝:props 进,provider 出
+│   │   ├── contracts.ts          # 窄浏览器宿主契约
+│   │   ├── locale.ts             # 功能自有字典
+│   │   └── settings.ts           # 持久化形状、默认值与归一化
 │   ├── README.md                 # 服务与功能模块的增长规则
 │   ├── commands.ts               # 基于 ctx.commands 的 slash command companion
 │   ├── config.ts                 # 可序列化 schema 与解析后的默认值
@@ -36,11 +46,14 @@
 │   └── tools.ts                  # 基于 ctx.tools 的 tool 注册 companion
 ├── tests/
 │   ├── README.md                 # harness、功能测试与快照约定
-│   ├── client.test.ts            # settings 归一化、receiver 绑定、locale 对齐
+│   ├── client-components.test.tsx  # store、context、hook 与组件(jsdom)
 │   ├── client-registration.test.ts  # slot 注册与 fiber 销毁
+│   ├── client-store.test.ts      # store 状态迁移与宿主同步(Node)
+│   ├── client.test.ts            # settings 归一化、receiver 绑定、locale 对齐
 │   ├── companions.test.ts        # tool、route、command 与 skill companion
 │   ├── harness.ts                # 共享的真实 Cordis 测试挂载
 │   ├── plugin.test.ts            # Loader 导出、激活与 companion 销毁
+│   ├── setup-dom.ts              # 组件测试之间的 jsdom 清理
 │   └── snapshots/
 │       └── README.md             # 可选的产品可见 fixture 契约
 ├── .oxlintrc.json                 # 类型感知的 Oxlint 配置
@@ -172,6 +185,28 @@ invariant companion 通过窄本地接口使用宿主的 `invariants` 服务。�
 }
 ```
 
+### 状态:zustand,通过 context 作用域化
+
+浏览器面是一棵 React 树,配一个 **zustand** store,并按下述分层组织,因此新增一个字段意味着新增一个 hook 和一个组件,而不是层层传 props:
+
+| 层 | 文件 | 职责 |
+|---|---|---|
+| Store | `src/client/store.ts` | 全部可变设置状态及其上的 action |
+| Context | `src/client/context.tsx` | 每个插件实例一个 store,以及 provider |
+| Hooks | `src/client/hooks.ts` | 组件唯一受支持的读取路径 |
+| 组件 | `src/client/settings-section.tsx`、`message-field.tsx`、`save-controls.tsx` | 只渲染,且仅通过 hook 读状态 |
+| 接缝 | `src/client/settings-page.tsx` | 接收 slot 的 props,挂载 provider |
+
+复制时值得保留的三个决定:
+
+**store 用 vanilla zustand,而不是 React 版本。** 来自 `zustand/vanilla` 的 `createStore` 不引入 React,因此状态规则可以在纯 Node 下做单元测试,不需要 DOM —— 这也是 `tests/client-store.test.ts` 跑在 `node` 项目、而组件测试跑在 `jsdom` 的原因。
+
+**zustand 是被打包进去的,不是宿主提供的。** 宿主的浏览器 loader 提供 `react`、`react/jsx-runtime`、`react-dom` 以及它自己的 `@deepseek-ai/*` client 包;它不提供 zustand。因此 zustand 是一个 `devDependency`,会被打进 `lib/client.js`。不要把它加进 `deps.neverBundle` —— 那会留下宿主无法解析的 `require('zustand')`。代价很小(几 kB;在 React 19 下 `use-sync-external-store` shim 不会被打进来),而且宿主自身用的是 `useSyncExternalStore` 而非 zustand,所以不存在需要对齐的版本。
+
+**每个实例一个 store,由 provider 创建。** 模块级 store 会被每一份挂载的插件副本以及每个测试共享,于是两个实例会悄悄互相改写。`SettingsStoreProvider` 在 `useState` 初始化器里创建 store(而不是用 React 可能丢弃的 `useMemo`),并通过 context 向下传递。在 provider 之外调用 hook 会抛出带名字的错误,而不是渲染出 `undefined`。
+
+store 把宿主 scope 当作外部权威:`connectSettingsScope` 把它镜像进来,当表单**干净**时到达的变更会被跟随,而**编辑中**到达的变更会保留已输入文本、只重置基线。保存失败同样保留草稿并记录原因,而不是丢弃用户输入。
+
 ### 最丰富的 slot:右侧栏标签页
 
 本模板演示的 `settings.section` 座位是简单的列表 slot。右侧栏是另一个极端 —— 一个**可停靠的标签页注册表** —— 形态不同,因此在需要之前值得了解。此处只做文档说明,不做演示。
@@ -255,4 +290,4 @@ pnpm pack --dry-run --json
 
 ## 测试指引
 
-自带测试证明 Loader 安全的 ESM 导出与 schema 解析后的激活。把激活断言替换为对每个 registry 贡献的可观察行为与销毁断言。产品可见插件应在消费它的 DSH 应用中添加真实 Loader/profile 组合测试,而不是只依赖手工挂载的单元测试。
+自带测试证明 Loader 安全的 ESM 导出与 schema 解析后的激活。把激活断言替换为对每个 registry 贡献的可观察行为与销毁断言。`pnpm test` 运行两个 project,因为包的两半需要不同的运行环境:`node` project 覆盖宿主 entry 与 store(无 DOM),`dom` project 在 `jsdom` 中覆盖 React 组件与 hook。`vitest.config.ts` 里的 `#src/*` alias 对应 manifest 的 `imports` 映射 —— 后者只声明了 `.ts`,无法自行解析 `.tsx` 模块。产品可见插件应在消费它的 DSH 应用中添加真实 Loader/profile 组合测试,而不是只依赖手工挂载的单元测试。

@@ -25,6 +25,7 @@ const en = {
   save: 'Save',
   saving: 'Saving…',
   reset: 'Reset',
+  saveFailed: 'Could not save',
 } as const
 
 /** Keys the reference dictionary declares. */
@@ -46,6 +47,7 @@ const zh: Record<MessageKey, string> = {
   save: '保存',
   saving: '保存中…',
   reset: '重置',
+  saveFailed: '保存失败',
 }
 
 /** Dictionaries registered under this feature's namespace. */

@@ -20,8 +20,11 @@ that does not provide that service can still load the package:
 - `src/routes.ts`: serves HTTP endpoints through `ctx.webServer`;
 - `src/commands.ts`: registers a slash command through `ctx.commands`;
 - `src/skills.ts`: contributes a runtime skill through `ctx.skills`;
-- `src/client/`: the browser face — slot registration, locale dictionaries, and
-  the settings model and page.
+- `src/client/`: the browser face, layered so a new field is a hook plus a
+  component rather than new prop plumbing — `store.ts` (vanilla zustand, no
+  React), `context.tsx` (one store per plugin instance), `hooks.ts` (the only
+  read path components use), the `*.tsx` components, and `settings-page.tsx` as
+  the slot-facing seam that mounts the provider. Only the seam takes slot props.
 
 Resolve each host service through a narrow local interface plus a type guard
 rather than importing the host's service type, and annotate such a lookup as
@@ -42,6 +45,9 @@ conventions:
   services;
 - add a companion only when the package has that capability, and add its build
   entry, `exports` subpath, and disposal test together.
+- put client state in `src/client/store.ts` and read it through
+  `src/client/hooks.ts`; keep React out of the store so its rules stay testable
+  in Node.
 
 Create a directory only when production code needs it. Name feature directories
 after the capability they own rather than copying another plugin's

@@ -25,7 +25,17 @@ Normal npm dependencies are resolved from the package registry. A DSH host is a 
 │   ├── wrap-client.mjs           # Wraps the client bundle in the ModuleLoader envelope
 │   └── verify-client.mjs         # Loads the built client through a loader shim
 ├── src/
-│   ├── client/                   # Browser face: slots, locale, settings, page
+│   ├── client/                   # Browser face
+│   │   ├── store.ts              # zustand store: settings state and actions
+│   │   ├── context.tsx           # per-instance store provider and its reader
+│   │   ├── hooks.ts              # the read path components use
+│   │   ├── settings-section.tsx  # layout, composing the parts below
+│   │   ├── message-field.tsx     # presentational field, state via hooks
+│   │   ├── save-controls.tsx     # commit and reset, state via hooks
+│   │   ├── settings-page.tsx     # slot seam: props in, provider out
+│   │   ├── contracts.ts          # narrow browser host contracts
+│   │   ├── locale.ts             # feature-owned dictionaries
+│   │   └── settings.ts           # persisted shape, defaults, normalization
 │   ├── README.md                 # Growth rules for services and feature modules
 │   ├── commands.ts               # Slash-command companion over ctx.commands
 │   ├── config.ts                 # Serializable schema and resolved defaults
@@ -37,11 +47,14 @@ Normal npm dependencies are resolved from the package registry. A DSH host is a 
 │   └── tools.ts                  # Tool-registration companion over ctx.tools
 ├── tests/
 │   ├── README.md                 # Harness, feature-test, and snapshot conventions
-│   ├── client.test.ts            # Settings normalization, receiver binding, locale parity
+│   ├── client-components.test.tsx  # Store, context, hooks and components (jsdom)
 │   ├── client-registration.test.ts  # Slot registration and fiber disposal
+│   ├── client-store.test.ts      # Store transitions and host sync (Node)
+│   ├── client.test.ts            # Settings normalization, receiver binding, locale parity
 │   ├── companions.test.ts        # Tool, route, command and skill companions
 │   ├── harness.ts                # Shared real-Cordis test mount
 │   ├── plugin.test.ts            # Loader exports, activation, and companion disposal
+│   ├── setup-dom.ts              # jsdom cleanup between component tests
 │   └── snapshots/
 │       └── README.md             # Optional product-visible fixture contract
 ├── .gitignore                    # Generated artifact exclusions
@@ -178,6 +191,48 @@ the client separately: `format: ['cjs']`, a browser target, and `deps.neverBundl
 for `react` and `react/jsx-runtime`, which the host supplies. Declaring React as a
 `devDependency` is correct — it is needed to build and typecheck, never to ship.
 
+### State: zustand, scoped through context
+
+The browser face is a React tree with a **zustand** store, layered so that adding
+a field means adding a hook and a component, not threading props:
+
+| Layer | File | Owns |
+|---|---|---|
+| Store | `src/client/store.ts` | All mutable settings state and the actions over it |
+| Context | `src/client/context.tsx` | One store per plugin instance, plus the provider |
+| Hooks | `src/client/hooks.ts` | The only supported read path for components |
+| Components | `src/client/settings-section.tsx`, `message-field.tsx`, `save-controls.tsx` | Rendering, reading state only through hooks |
+| Seam | `src/client/settings-page.tsx` | Receives the slot's props and mounts the provider |
+
+Three decisions are worth keeping if you copy this:
+
+**The store is vanilla zustand, not the React build.** `createStore` from
+`zustand/vanilla` imports no React, so the state rules are unit-testable in plain
+Node with no DOM — which is why `tests/client-store.test.ts` runs in the `node`
+project while the component tests run in `jsdom`.
+
+**zustand is bundled, not host-supplied.** The host's browser loader supplies
+`react`, `react/jsx-runtime`, `react-dom` and its own `@deepseek-ai/*` client
+packages; it does not supply zustand. So zustand is a `devDependency` that is
+bundled into `lib/client.js`. Do not add it to `deps.neverBundle` — that would
+leave a `require('zustand')` the host cannot resolve. The cost is small (a few kB;
+with React 19 the `use-sync-external-store` shim is unused), and because the host
+itself uses a `useSyncExternalStore` store rather than zustand, there is no
+version to stay compatible with.
+
+**One store per instance, created by the provider.** A module-scope store would be
+shared by every mounted copy of the plugin and by every test, so two instances
+would silently edit each other. `SettingsStoreProvider` creates the store in a
+`useState` initializer — not `useMemo`, which React may discard — and hands it
+down through context. Reading a hook outside the provider throws a named error
+rather than rendering `undefined`.
+
+The store treats the host scope as the external authority: `connectSettingsScope`
+mirrors it in, and a change arriving while the form is **clean** is followed,
+while one arriving during an **edit** keeps the typed text and only rebases the
+baseline. A failed save likewise keeps the draft and records the reason instead
+of discarding what the user typed.
+
 **A successful build is not evidence the UI works.** `scripts/verify-client.mjs`
 installs a `__ModuleLoader__` shim, supplies the host modules, imports the artifact,
 and asserts the loader id and the `apply` / `inject` / `name` exports. An artifact
@@ -297,5 +352,7 @@ pnpm pack --dry-run --json
 The final package must contain every runtime and declaration file named by `main`, `types`, `exports`, and `files`; `check-package.mjs` fails the run when any declared path is missing from the archive. Set `private: true` while the package is still a starting point, and clear it only once the DSH host peers are available through the channel you intend to publish on — npm publication of this package is not automated.
 
 ## Testing guidance
+
+`pnpm test` runs two projects, because the two halves of the package need different worlds: the `node` project covers the host entries and the store (no DOM), and the `dom` project covers the React components and hooks in `jsdom`. The `#src/*` alias in `vitest.config.ts` mirrors the manifest's `imports` map, which is declared for `.ts` only and cannot resolve a `.tsx` module on its own.
 
 The included test proves Loader-safe ESM exports and schema-resolved activation. Replace the activation assertions with observable behavior and disposal assertions for every registry contribution. Product-visible plugins should add a real Loader/profile composition test in the consuming DSH application rather than relying only on hand-mounted unit tests.

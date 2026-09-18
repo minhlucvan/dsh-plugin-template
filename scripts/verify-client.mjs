@@ -28,13 +28,33 @@ const HOST_MODULES = ['react', 'react/jsx-runtime']
 /** Exports every DSH client entry must provide. */
 const REQUIRED_EXPORTS = ['apply', 'inject', 'name']
 
-/** Stand-in for the host's React: enough for the factory to evaluate. */
+/**
+ * Stand-in for the host's React: enough for the module body to evaluate.
+ *
+ * This shim has to cover every React API the entry touches at *module* scope,
+ * because the factory runs here exactly as it would in the browser. A real
+ * React tree reaches for `createContext`/`useContext` as the module loads, so a
+ * shim missing them fails verification for a bundle the browser would run fine
+ * — the check would be wrong, not the artifact.
+ */
 const reactShim = {
+	createContext: (defaultValue) => ({
+		Provider: ({ children }) => children,
+		Consumer: {},
+		_defaultValue: defaultValue,
+	}),
 	createElement: () => ({}),
 	Fragment: {},
 	useCallback: (callback) => callback,
+	useContext: (context) => context?._defaultValue,
+	useEffect: () => undefined,
+	useId: () => 'verify-client',
 	useMemo: (factory) => factory(),
-	useState: () => [undefined, () => undefined],
+	useRef: (value) => ({ current: value }),
+	useState: (initial) => [
+		typeof initial === 'function' ? initial() : initial,
+		() => undefined,
+	],
 	useSyncExternalStore: () => '',
 }
 

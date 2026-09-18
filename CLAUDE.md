@@ -43,7 +43,13 @@ Keep each concern in its documented owner instead of letting files sprawl:
 | `src/index.ts` | Loader-facing plugin namespace: `name`, `inject`, `Config`, `apply` re-exports only |
 | `src/config.ts` | Serializable Schemastery schema, defaults, `resolveConfig` for direct callers |
 | `src/runtime.ts` | Fakeable host boundary (`PluginRuntime`) and Cordis activation |
-| `src/client/` | Browser face: slot registration, locale dictionaries, settings model and page |
+| `src/client/store.ts` | zustand store: settings state, actions, and host-scope sync |
+| `src/client/context.tsx` | Per-instance store provider and its reader hook |
+| `src/client/hooks.ts` | The read path components use; selectors stay narrow |
+| `src/client/*.tsx` | Composed components plus the slot-facing page seam |
+| `src/client/contracts.ts` | Narrow browser host contracts |
+| `src/client/locale.ts` | Feature-owned locale dictionaries |
+| `src/client/settings.ts` | Persisted shape, defaults, and boundary normalization |
 | `src/commands.ts` | Optional `./commands` companion registering a slash command through `ctx.commands` |
 | `src/invariant.ts` | Optional `./invariant` companion for the host `invariants` service |
 | `src/routes.ts` | Optional `./routes` companion serving HTTP endpoints through `ctx.webServer` |
@@ -54,10 +60,14 @@ Keep each concern in its documented owner instead of letting files sprawl:
 | `tests/plugin.test.ts` | Loader exports, configuration, activation, companion disposal |
 | `tests/companions.test.ts` | `tools`, `routes`, `commands`, `skills` registration and disposal |
 | `tests/client.test.ts` | Settings normalization, receiver binding, locale parity |
+| `tests/client-store.test.ts` | Store transitions and host sync (Node project) |
+| `tests/client-components.test.tsx` | Provider, hooks, and components (jsdom project) |
+| `tests/setup-dom.ts` | jsdom cleanup between component tests |
 | `tests/client-registration.test.ts` | Client slot registration and fiber disposal |
 | `tests/snapshots/` | Product-visible fixture contract (currently empty) |
 | `tsdown.config.ts` | Host build entries; add an entry for every new public subpath |
 | `tsdown.client.config.ts` | Separate CommonJS browser build for `src/client/` |
+| `vitest.config.ts` | The `node` and `dom` test projects and the `#src` alias |
 | `scripts/check-package.mjs` | Asserts the packed archive covers the manifest |
 | `cordis.patch.yml` | Profile bundle contribution applied over a DSH profile |
 | `.agents/skills/` | Repository-local plugin workflow skills |
@@ -92,6 +102,30 @@ production code needs it.
   without a separate `tsc --noEmit` gate.
 - **Keep documentation in sync.** When behavior changes, update `README.md`,
   configuration JSDoc, tests, and `cordis.patch.yml` together.
+
+## Client architecture
+
+The browser face is a React tree over a **zustand** store, layered so that a new
+field means a new hook and component rather than new prop plumbing:
+
+- `src/client/store.ts` is built on `zustand/vanilla`, so it imports no React and
+  its rules are testable in Node. Keep it that way; React belongs in `hooks.ts`.
+- `src/client/context.tsx` creates **one store per plugin instance** in a
+  `useState` initializer. Never hoist a store to module scope: two mounted copies
+  of the plugin, and every test, would then share it.
+- Components read state only through `src/client/hooks.ts`, and each hook selects
+  the narrowest slice. Subscribing to the whole state re-renders every field on
+  every keystroke.
+- Components receive no state as props. Only the `settings-page.tsx` seam takes
+  slot props, and it does nothing but mount the provider.
+- The host scope is the external authority: `connectSettingsScope` mirrors it in.
+  A change while clean is followed; a change while edited keeps the user's text.
+  A failed save keeps the draft and records the reason.
+- **zustand is bundled, not host-supplied.** It is a `devDependency` that ends up
+  inside `lib/client.js`. Do not add it to `deps.neverBundle` in
+  `tsdown.client.config.ts` — that would emit a `require('zustand')` the host
+  cannot resolve. Only `react`, `react/jsx-runtime`, and `@deepseek-ai/cordis`
+  are external.
 
 ## Optional companions
 
