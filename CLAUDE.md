@@ -40,6 +40,7 @@ Keep each concern in its documented owner instead of letting files sprawl:
 | `src/config.ts` | Serializable Schemastery schema, defaults, `resolveConfig` for direct callers |
 | `src/runtime.ts` | Fakeable host boundary (`PluginRuntime`) and Cordis activation |
 | `src/client/` | Browser face: slot registration, locale dictionaries, settings model and page |
+| `src/commands.ts` | Optional `./commands` companion registering a slash command through `ctx.commands` |
 | `src/invariant.ts` | Optional `./invariant` companion for the host `invariants` service |
 | `src/routes.ts` | Optional `./routes` companion serving HTTP endpoints through `ctx.webServer` |
 | `src/tools.ts` | Optional `./tools` companion that registers tools through `ctx.tools` |
@@ -84,16 +85,18 @@ production code needs it.
 
 ## Optional companions
 
-`./invariant`, `./routes` and `./tools` are separate entries so the core bundle
-stays free of the DSH tool stack and the browser carrier:
+`./commands`, `./invariant`, `./routes` and `./tools` are separate entries so the
+core bundle stays free of the DSH tool stack, the browser carrier and the command
+registry:
 
 - They are built as independent tsdown entries and exported as
-  `@your-scope/dsh-plugin-template/invariant`, `.../routes` and `.../tools`.
-- Each injects the host service it needs (`inject = ['invariants']`,
-  `inject = ['webServer']`, `inject = ['tools']`) and resolves it through a
-  narrow local interface plus a type guard, mirroring the pattern in
-  `src/invariant.ts`. This keeps the build independent of host source packages
-  while a composed profile supplies the real service.
+  `@your-scope/dsh-plugin-template/commands`, `.../invariant`, `.../routes` and
+  `.../tools`.
+- Each injects the host service it needs (`inject = ['commands']`,
+  `inject = ['invariants']`, `inject = ['webServer']`, `inject = ['tools']`) and
+  resolves it through a narrow local interface plus a type guard, mirroring the
+  pattern in `src/invariant.ts`. This keeps the build independent of host source
+  packages while a composed profile supplies the real service.
 - `src/routes.ts` annotates its service lookup as `unknown` before the type
   guard, because the host's `webServer` augmentation lives in a package this
   repository does not depend on. Without the annotation the lookup is `any`, and

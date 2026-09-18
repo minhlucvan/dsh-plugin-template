@@ -26,6 +26,7 @@ Normal npm dependencies are resolved from the package registry. A DSH host is a 
 ├── src/
 │   ├── client/                   # Browser face: slots, locale, settings, page
 │   ├── README.md                 # Growth rules for services and feature modules
+│   ├── commands.ts               # Slash-command companion over ctx.commands
 │   ├── config.ts                 # Serializable schema and resolved defaults
 │   ├── index.ts                  # Loader-facing function-plugin namespace
 │   ├── invariant.ts              # Package-owned invariant companion

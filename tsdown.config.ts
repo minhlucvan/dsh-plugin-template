@@ -6,6 +6,7 @@ import { defineConfig } from 'tsdown'
  */
 export default defineConfig({
   entry: {
+    commands: 'src/commands.ts',
     index: 'src/index.ts',
     invariant: 'src/invariant.ts',
     routes: 'src/routes.ts',

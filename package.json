@@ -36,6 +36,10 @@
       "types": "./lib/client.d.ts",
       "default": "./lib/client.js"
     },
+    "./commands": {
+      "types": "./lib/commands.d.ts",
+      "default": "./lib/commands.js"
+    },
     "./invariant": {
       "types": "./lib/invariant.d.ts",
       "default": "./lib/invariant.js"
