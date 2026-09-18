@@ -9,6 +9,7 @@ const EXPECTED_SINGLE_CALL = 1
 const FIRST_INDEX = 0
 const SECOND_INDEX = 1
 const PACKAGE_NAME = '@your-scope/dsh-plugin-template'
+const ROUTE_PATH = '/api/plugin-template/info'
 
 interface PluginExports {
   readonly name: unknown
@@ -117,6 +118,32 @@ async function testRegistersToolCompanion(): Promise<void> {
   removeService()
 }
 
+function assertRoutePath(route: unknown, expected: string): void {
+  if (typeof route !== 'object' || route === null || !('path' in route)) {
+    throw new TypeError('route companion did not register a route')
+  }
+  expect(route.path).toBe(expected)
+}
+
+async function testRegistersRouteCompanion(): Promise<void> {
+  expect.hasAssertions()
+  const ctx = new Context()
+  const unregister = vi.fn<() => void>()
+  const register = vi.fn<(route: unknown) => () => void>(() => (): void => {
+    unregister()
+  })
+  const removeService = ctx.provide('webServer', { register })
+  const routes = await import('#src/routes')
+
+  const fiber = await ctx.plugin(routes)
+  expect(register).toHaveBeenCalledTimes(EXPECTED_SINGLE_CALL)
+  assertRoutePath(register.mock.calls[FIRST_INDEX]?.[FIRST_INDEX], ROUTE_PATH)
+
+  await fiber.dispose()
+  expect(unregister).toHaveBeenCalledTimes(EXPECTED_SINGLE_CALL)
+  removeService()
+}
+
 describe('@your-scope/dsh-plugin-template', () => {
   it(
     'preserves the function-plugin namespace through Loader unwrapping',
@@ -146,5 +173,11 @@ describe('@your-scope/dsh-plugin-template', () => {
     'registers the tool companion and disposes it with the fiber',
     { timeout: TEST_TIMEOUT },
     testRegistersToolCompanion,
+  )
+
+  it(
+    'registers the route companion and disposes it with the fiber',
+    { timeout: TEST_TIMEOUT },
+    testRegistersRouteCompanion,
   )
 })

@@ -36,6 +36,10 @@
       "types": "./lib/invariant.d.ts",
       "default": "./lib/invariant.js"
     },
+    "./routes": {
+      "types": "./lib/routes.d.ts",
+      "default": "./lib/routes.js"
+    },
     "./tools": {
       "types": "./lib/tools.d.ts",
       "default": "./lib/tools.js"

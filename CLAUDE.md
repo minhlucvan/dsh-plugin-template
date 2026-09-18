@@ -40,6 +40,7 @@ Keep each concern in its documented owner instead of letting files sprawl:
 | `src/config.ts` | Serializable Schemastery schema, defaults, `resolveConfig` for direct callers |
 | `src/runtime.ts` | Fakeable host boundary (`PluginRuntime`) and Cordis activation |
 | `src/invariant.ts` | Optional `./invariant` companion for the host `invariants` service |
+| `src/routes.ts` | Optional `./routes` companion serving HTTP endpoints through `ctx.webServer` |
 | `src/tools.ts` | Optional `./tools` companion that registers tools through `ctx.tools` |
 | `src/README.md` | Growth rules for feature modules and services |
 | `tests/harness.ts` | Shared real-Cordis mount with an observable fake host boundary |
@@ -82,16 +83,20 @@ production code needs it.
 
 ## Optional companions
 
-`./invariant` and `./tools` are separate entries so the core bundle stays free of
-the DSH tool stack:
+`./invariant`, `./routes` and `./tools` are separate entries so the core bundle
+stays free of the DSH tool stack and the browser carrier:
 
 - They are built as independent tsdown entries and exported as
-  `@your-scope/dsh-plugin-template/invariant` and `.../tools`.
+  `@your-scope/dsh-plugin-template/invariant`, `.../routes` and `.../tools`.
 - Each injects the host service it needs (`inject = ['invariants']`,
-  `inject = ['tools']`) and resolves it through a narrow local interface plus a
-  type guard, mirroring the pattern in `src/invariant.ts`. This keeps the build
-  independent of host source packages while a composed profile supplies the real
-  service.
+  `inject = ['webServer']`, `inject = ['tools']`) and resolves it through a
+  narrow local interface plus a type guard, mirroring the pattern in
+  `src/invariant.ts`. This keeps the build independent of host source packages
+  while a composed profile supplies the real service.
+- `src/routes.ts` annotates its service lookup as `unknown` before the type
+  guard, because the host's `webServer` augmentation lives in a package this
+  repository does not depend on. Without the annotation the lookup is `any`, and
+  `no-unsafe-assignment` is a lint error.
 - Do **not** add their bundle rows to `cordis.patch.yml` by default. Ordinary
   `dsh-base`/`dsh-web-app` profiles do not provide those services, and a pending
   injection blocks startup; the comment in `cordis.patch.yml` records this.
