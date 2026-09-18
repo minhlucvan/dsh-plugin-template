@@ -1,7 +1,7 @@
 /**
  * Serializable configuration, schema, and direct-call defaults.
  *
- * @module @your-scope/dsh-plugin-template/config
+ * @module @minhlucvan/dsh-plugin-template/config
  */
 
 import schema from '@deepseek-ai/schemastery'

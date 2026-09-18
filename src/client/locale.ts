@@ -6,7 +6,7 @@
  * receive the translator as a prop and never invent fallback copy, so a missing
  * key is a visible gap rather than English leaking into another language.
  *
- * @module @your-scope/dsh-plugin-template/client/locale
+ * @module @minhlucvan/dsh-plugin-template/client/locale
  */
 
 import type { LocaleDictionaries } from './contracts.ts'

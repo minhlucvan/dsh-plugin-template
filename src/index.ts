@@ -1,7 +1,7 @@
 /**
  * Standalone function plugin for DeepSeek Harness.
  *
- * @module @your-scope/dsh-plugin-template
+ * @module @minhlucvan/dsh-plugin-template
  */
 
 /** Cordis plugin name; keep this stable after publishing. */

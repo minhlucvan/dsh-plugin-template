@@ -13,11 +13,22 @@ on:
 permissions:
   contents: write
 
+# Publish from one push at a time; a superseded run must not upload a stale
+# tarball over a newer release.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+        with:
+          # `gh release create --generate-notes` needs the commit history to
+          # build notes; the default shallow clone would produce empty ones.
+          fetch-depth: 0
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
@@ -27,6 +38,8 @@ jobs:
       - run: pnpm run lint
       - run: pnpm test
       - run: pnpm run build
+      - name: Verify the packed archive covers the manifest
+        run: node scripts/check-package.mjs
       - name: Pack the artifact
         run: |
           pnpm pack --pack-destination dist

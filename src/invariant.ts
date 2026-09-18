@@ -1,12 +1,12 @@
 /**
- * Package-owned invariant companion for `@your-scope/dsh-plugin-template`.
+ * Package-owned invariant companion for `@minhlucvan/dsh-plugin-template`.
  *
- * @module @your-scope/dsh-plugin-template/invariant
+ * @module @minhlucvan/dsh-plugin-template/invariant
  */
 
 import type { Context } from '@deepseek-ai/cordis'
 
-const PACKAGE_NAME = '@your-scope/dsh-plugin-template'
+const PACKAGE_NAME = '@minhlucvan/dsh-plugin-template'
 
 /** A package-attributed invariant failure reported by the host registry. */
 type InvariantFailure = (message: string) => never

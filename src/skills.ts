@@ -1,5 +1,5 @@
 /**
- * Optional skill companion for `@your-scope/dsh-plugin-template`.
+ * Optional skill companion for `@minhlucvan/dsh-plugin-template`.
  *
  * A skill is routing metadata plus a markdown body the model loads only when
  * the description matches the task, which is what makes it different from a
@@ -11,7 +11,7 @@
  * self-contained; a package with substantial documentation registers a
  * `resourceBase` instead and ships the directory.
  *
- * @module @your-scope/dsh-plugin-template/skills
+ * @module @minhlucvan/dsh-plugin-template/skills
  */
 
 import type { Context } from '@deepseek-ai/cordis'

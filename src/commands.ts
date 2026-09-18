@@ -1,5 +1,5 @@
 /**
- * Optional command companion for `@your-scope/dsh-plugin-template`.
+ * Optional command companion for `@minhlucvan/dsh-plugin-template`.
  *
  * A human-invoked slash command runs against the receiving agent without being
  * sent to the model, so it is the right shape for an action the operator wants
@@ -7,7 +7,7 @@
  * resolves its service through a narrow local contract, so the package builds
  * and tests without the host's command package.
  *
- * @module @your-scope/dsh-plugin-template/commands
+ * @module @minhlucvan/dsh-plugin-template/commands
  */
 
 import type { Context } from '@deepseek-ai/cordis'

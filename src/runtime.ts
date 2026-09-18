@@ -1,7 +1,7 @@
 /**
  * Runtime boundary and Cordis activation for the plugin.
  *
- * @module @your-scope/dsh-plugin-template/runtime
+ * @module @minhlucvan/dsh-plugin-template/runtime
  */
 
 import type { Context } from '@deepseek-ai/cordis'

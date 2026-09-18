@@ -2,7 +2,7 @@
  * Client settings model: the persisted shape, its defaults, boundary
  * normalization, and the receiver-safe source React consumes.
  *
- * @module @your-scope/dsh-plugin-template/client/settings
+ * @module @minhlucvan/dsh-plugin-template/client/settings
  */
 
 import type { SettingsScope } from './contracts.ts'

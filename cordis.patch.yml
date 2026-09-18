@@ -4,7 +4,7 @@
 
 - insert:
     - id: plugin-template
-      name: '@your-scope/dsh-plugin-template'
+      name: '@minhlucvan/dsh-plugin-template'
       config:
         message: DSH plugin template loaded
 

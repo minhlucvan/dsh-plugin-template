@@ -20,7 +20,7 @@ const TEST_TIMEOUT = 5000
 const EXPECTED_SINGLE_CALL = 1
 const FIRST_INDEX = 0
 const SECOND_INDEX = 1
-const PACKAGE_NAME = '@your-scope/dsh-plugin-template'
+const PACKAGE_NAME = '@minhlucvan/dsh-plugin-template'
 
 interface PluginExports {
   readonly name: unknown
@@ -107,7 +107,7 @@ async function testRegistersInvariantCompanion(): Promise<void> {
   removeService()
 }
 
-describe('@your-scope/dsh-plugin-template', () => {
+describe('@minhlucvan/dsh-plugin-template', () => {
   it(
     'preserves the function-plugin namespace through Loader unwrapping',
     { timeout: TEST_TIMEOUT },

@@ -1,7 +1,7 @@
 /**
- * Optional tool-registration companion for `@your-scope/dsh-plugin-template`.
+ * Optional tool-registration companion for `@minhlucvan/dsh-plugin-template`.
  *
- * @module @your-scope/dsh-plugin-template/tools
+ * @module @minhlucvan/dsh-plugin-template/tools
  */
 
 import type { Context } from '@deepseek-ai/cordis'

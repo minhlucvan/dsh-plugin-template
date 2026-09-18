@@ -1,5 +1,5 @@
 {
-  "name": "@your-scope/dsh-plugin-template",
+  "name": "@minhlucvan/dsh-plugin-template",
   "description": "Standalone Cordis plugin template for DeepSeek Harness",
   "keywords": [
     "cordis",

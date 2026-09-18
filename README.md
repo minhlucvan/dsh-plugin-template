@@ -19,6 +19,7 @@ Normal npm dependencies are resolved from the package registry. A DSH host is a 
 ├── patches/
 │   └── README.md                 # Dependency and DSH-host patch contract
 ├── scripts/
+│   ├── check-package.mjs         # Asserts the packed archive covers the manifest
 │   ├── extract-patch.mjs         # Config-driven host patch regeneration (see patches/README.md)
 │   ├── patch.sh                  # Idempotent host patch application
 │   ├── wrap-client.mjs           # Wraps the client bundle in the ModuleLoader envelope
@@ -44,15 +45,18 @@ Normal npm dependencies are resolved from the package registry. A DSH host is a 
 │   └── snapshots/
 │       └── README.md             # Optional product-visible fixture contract
 ├── .gitignore                    # Generated artifact exclusions
+├── AGENT.md                      # Repository contract for coding agents
 ├── AGENTS.md                     # Repository-local contributor rules
+├── CLAUDE.md                     # The same contract for Claude-based sessions
 ├── LICENSE                       # Template license
 ├── README.md                     # Repository and usage contract
 ├── cordis.patch.yml              # Profile bundle contribution
-├── package.json                  # Exports, peers, dsh.bundle.patch
+├── package.json                  # Exports, peers, dsh.bundle.patch, dsh.client
 ├── pnpm-lock.yaml                # Reproducible registry dependency graph
 ├── pnpm-workspace.yaml           # Package-manager and optional patch policy
 ├── tsconfig.json                 # Compiler and type-aware lint project
 ├── tsdown.config.ts              # Direct source-to-runtime/declaration build
+├── tsdown.client.config.ts       # Separate CommonJS browser build
 └── vitest.config.ts              # Test runner configuration
 ```
 
@@ -60,12 +64,12 @@ Normal npm dependencies are resolved from the package registry. A DSH host is a 
 
 A package may be host-only, client-only, or split across host and browser faces. Keep Loader metadata, configuration, runtime/service boundaries, browser behavior, shared contracts, and tests in the owners appropriate to the package; the template does not require every plugin to copy one fixed directory layout.
 
-The template's sample skeleton still uses `src/index.ts`, `src/config.ts`, `src/runtime.ts`, `src/invariant.ts`, `tests/harness.ts`, and `tests/plugin.spec.ts`; retain those owners when they fit the package, and document any deliberate replacement. Stable product-visible expected output belongs under the package's actual snapshot owner. Dependency and DSH-host patches use the optional `patches/` contract when needed.
+The template's sample skeleton uses `src/index.ts`, `src/config.ts`, `src/runtime.ts`, `src/invariant.ts`, `src/tools.ts`, `src/commands.ts`, `src/routes.ts`, `src/skills.ts`, `src/client/`, `tests/harness.ts`, and `tests/plugin.test.ts`; retain those owners when they fit the package, and document any deliberate replacement. Stable product-visible expected output belongs under the package's actual snapshot owner. Dependency and DSH-host patches use the optional `patches/` contract when needed.
 
 ## Create your plugin
 
 1. Replace package identity in `package.json`, the Loader owner, configuration/runtime/invariant owners, focused test owners, bundle metadata, TypeScript metadata, `README.md`, and `AGENTS.md` as applicable. The sample skeleton names these owners explicitly; a deliberate replacement must update the package's local documentation and static-analysis configuration too.
-2. Choose and record the exact npm package name before replacing identity. It may be scoped or unscoped (for example, `comem`); do not assume the template's `@your-scope/dsh-` prefix. Use the selected name verbatim in `package.json`, bundle rows, invariant registration, exports, tests, and documentation. Replace the template package name `@your-scope/dsh-plugin-template` and plugin ids only in those identity owners. Do not perform a global replacement inside `.agents/skills/`; its generic examples and marker checks must remain reusable.
+2. Choose and record the exact npm package name before replacing identity. It may be scoped or unscoped (for example, `comem`); do not assume the template's `@your-scope/dsh-` prefix. Use the selected name verbatim in `package.json`, bundle rows, invariant registration, exports, tests, and documentation. Replace the template package name `@minhlucvan/dsh-plugin-template` and plugin ids only in those identity owners. Do not perform a global replacement inside `.agents/skills/`; its generic examples and marker checks must remain reusable.
 3. Update `description`, `keywords`, `LICENSE`, and `cordis.patch.yml`.
 4. Add only the DSH host services used by the implementation to the package contract and composition patch. Keep source and build dependencies resolvable from this repository's `node_modules`; host-provided runtime APIs remain consumer-supplied peers.
 5. Replace the empty invariant installer when the package owns an authoritative event or mutable data relationship.
@@ -105,14 +109,38 @@ pnpm run build
 
 `lint` runs Oxlint with type-aware analysis and denies warnings for the configured source and test projects. `build` runs the configured source-to-artifact pipeline, including any declaration assembly or final artifact verifier owned by the package, and emits ready-to-pack output; it does not run an install-time lifecycle build. Extra arguments are passed through to tsdown, so `pnpm run build --sourcemap` emits source maps for local debugging; the default `build` emits none.
 
-The release artifact is built from the configured source owners before packing. Profile or consumer installation uses the ready-made `lib/` output and does not run `prepare`; `pnpm pack --dry-run --json` verifies the final archive contents.
+Because the package has both a host and a browser face, `build` is two builds:
+
+- `pnpm run build:host` — the host entries in `lib/`, built from `tsdown.config.ts`;
+- `pnpm run build:client` — the CommonJS browser bundle, then
+  `scripts/wrap-client.mjs` to wrap it in the ModuleLoader envelope and
+  `scripts/verify-client.mjs` to load the artifact through a loader shim.
+
+`pnpm run build` runs both. Prefer the narrower command while iterating on one
+face; the full build is the pre-commit gate.
+
+The release artifact is built from the configured source owners before packing. Profile or consumer installation uses the ready-made `lib/` output and does not run `prepare`; `node scripts/check-package.mjs` asserts the archive covers every path declared by `exports`, `main`, `types`, and `dsh.bundle.patch`, and `pnpm pack --dry-run --json` prints the final contents.
 
 ## CI
 
 Two GitHub Actions workflows ship with the template:
 
-- `.github/workflows/ci.yml` — every push to `main` and every pull request: install with the frozen lockfile, Oxlint static analysis, tests, and build.
-- `.github/workflows/release.yml` — every push to `main`: runs Oxlint, tests, builds, packs the ready-made tarball (`pnpm pack`), and follows the repository's configured GitHub Release policy.
+- `.github/workflows/ci.yml` — every push to `main` and every pull request:
+  installs with the frozen lockfile, then runs Oxlint, tests, the full build, and
+  `scripts/check-package.mjs`. It runs on Node 22 and Node 24 with
+  `fail-fast: false`, because the package supports both ends of its declared
+  `engines` range and a failure should name the version that regressed. The
+  workflow is read-only (`permissions: contents: read`) and cancels superseded
+  runs on the same ref.
+- `.github/workflows/release.yml` — every push to `main`, or a manual dispatch:
+  runs the same checks, packs the ready-made tarball as `dist/pkg.tgz`, and
+  attaches it to the GitHub Release tagged `v<version>` from `package.json`,
+  creating the release when it does not exist. It checks out with
+  `fetch-depth: 0` so `--generate-notes` has the history it needs.
+
+Bump `version` in `package.json` to cut a new release; pushing again without a
+bump refreshes the existing release's artifact. Publishing to npm is not
+automated.
 
 ## Profile activation
 
@@ -191,7 +219,7 @@ empty pane.
 ctx.effect(
   () =>
     ctx.sidebarRightTabs.register({
-      id: '@your-scope/dsh-plugin-template',   // unique; the key stage two registers under
+      id: '@minhlucvan/dsh-plugin-template',   // unique; the key stage two registers under
       kind: 'plugin-template-console',         // what openTab names
       // Omit `patterns` for a page type, which recognizes no address and is
       // opened by kind. Present, they are VS Code-style globs over scheme:// URIs,
@@ -217,7 +245,7 @@ ctx.effect(
   () =>
     ctx.slots.inject('sidebar.right.pane.tab', () =>
       ctx.slots.register(
-        { name: 'sidebar.right.pane.tab', key: '@your-scope/dsh-plugin-template', locale: NS, store, inject },
+        { name: 'sidebar.right.pane.tab', key: '@minhlucvan/dsh-plugin-template', locale: NS, store, inject },
         ConsoleBody,
       ),
     ),
@@ -262,10 +290,11 @@ Before considering packed or GitHub Release distribution, build and inspect the 
 pnpm run lint
 pnpm test
 pnpm run build
+node scripts/check-package.mjs
 pnpm pack --dry-run --json
 ```
 
-The final package must contain every runtime and declaration file named by `main`, `types`, `exports`, and `files`. Keep `private: true` until the package's DSH host peers are available through the selected distribution channel.
+The final package must contain every runtime and declaration file named by `main`, `types`, `exports`, and `files`; `check-package.mjs` fails the run when any declared path is missing from the archive. Set `private: true` while the package is still a starting point, and clear it only once the DSH host peers are available through the channel you intend to publish on — npm publication of this package is not automated.
 
 ## Testing guidance
 

@@ -1,6 +1,6 @@
 # AGENT.md — Working in this Repository
 
-Agent instructions for `@your-scope/dsh-plugin-template`, a standalone ESM Cordis
+Agent instructions for `@minhlucvan/dsh-plugin-template`, a standalone ESM Cordis
 plugin repository for DeepSeek Harness (DSH).
 
 This file is the repository contract for any coding agent. `CLAUDE.md` carries the
@@ -25,11 +25,15 @@ Useful variants:
 |---|---|
 | `pnpm run lint:fix` | Apply Oxlint's automatic fixes |
 | `pnpm run fmt` | Format `src/` and `tests/` with Oxfmt |
-| `pnpm run fmt:check` | Format check only (currently fails on pre-existing files; see *Known rough edges*) |
+| `pnpm run fmt:check` | Format check only |
+| `pnpm run build:host` | Host entries only |
+| `pnpm run build:client` | Browser bundle, envelope wrap, and loader verification |
 | `pnpm run build --sourcemap` | Build with source maps for local debugging |
+| `node scripts/check-package.mjs` | Assert the packed archive covers the manifest (needs a prior build) |
 
-`pnpm run lint`, `pnpm test`, and `pnpm run build` must pass before any change is
-considered done. CI (`.github/workflows/ci.yml`) runs exactly those three.
+`pnpm run lint`, `pnpm test`, `pnpm run build`, and `node scripts/check-package.mjs`
+must pass before any change is considered done. CI
+(`.github/workflows/ci.yml`) runs those on Node 22 and Node 24.
 
 ## Ownership map
 
@@ -49,8 +53,13 @@ Keep each concern in its documented owner instead of letting files sprawl:
 | `src/README.md` | Growth rules for feature modules and services |
 | `tests/harness.ts` | Shared real-Cordis mount with an observable fake host boundary |
 | `tests/plugin.test.ts` | Loader exports, configuration, activation, companion disposal |
+| `tests/companions.test.ts` | `tools`, `routes`, `commands`, `skills` registration and disposal |
+| `tests/client.test.ts` | Settings normalization, receiver binding, locale parity |
+| `tests/client-registration.test.ts` | Client slot registration and fiber disposal |
 | `tests/snapshots/` | Product-visible fixture contract (currently empty) |
-| `tsdown.config.ts` | Build entries; add an entry for every new public subpath |
+| `tsdown.config.ts` | Host build entries; add an entry for every new public subpath |
+| `tsdown.client.config.ts` | Separate CommonJS browser build for `src/client/` |
+| `scripts/check-package.mjs` | Asserts the packed archive covers the manifest |
 | `cordis.patch.yml` | Profile bundle contribution applied over a DSH profile |
 | `.agents/skills/` | Repository-local plugin workflow skills |
 | `docs/dsh-plugin-contracts.md` | Shared contract referenced by the local skills |
@@ -77,7 +86,7 @@ production code needs it.
 - **One package name, everywhere.** The name may be scoped or unscoped — do not
   assume an `@scope/dsh-` prefix. Use the selected name verbatim in
   `package.json`, `cordis.patch.yml`, invariant registration, tests, and docs.
-  Today that literal is `@your-scope/dsh-plugin-template`; a rename must update
+  Today that literal is `@minhlucvan/dsh-plugin-template`; a rename must update
   every occurrence, including `src/invariant.ts` and `tests/plugin.test.ts`.
 - **No TypeScript-only escapes.** `@ts-ignore`/`@ts-expect-error` and `any` leaks
   are lint errors. This matters because `pnpm run build` emits through tsdown
@@ -92,7 +101,7 @@ entries so the core bundle stays free of the DSH tool stack, the browser carrier
 the command registry and the skill registry:
 
 - They are built as independent tsdown entries and exported as
-  `@your-scope/dsh-plugin-template/commands`, `.../invariant`, `.../routes`,
+  `@minhlucvan/dsh-plugin-template/commands`, `.../invariant`, `.../routes`,
   `.../skills` and `.../tools`.
 - Each injects the host service it needs (`inject = ['commands']`,
   `inject = ['invariants']`, `inject = ['webServer']`, `inject = ['skills']`,
@@ -136,15 +145,7 @@ the command registry and the skill registry:
 
 ## Known rough edges
 
-These are pre-existing and unrelated to the plugin contract:
-
-- `pnpm run fmt:check` reports formatting drift in files such as `tests/README.md`
-  and the snapshot README; `pnpm run lint` is the enforced gate.
-- `README.md` still calls the test file `tests/plugin.spec.ts` while the
-  repository uses `tests/plugin.test.ts`, and its layout table predates
-  `src/tools.ts`.
 - `AGENTS.md` references `.agents/skills/dsh-plugin-stent-*` skills and
   `docs/dsh-plugin-stent.md`, neither of which exists in this repository. The real
-  skill set is the ten `dsh-plugin-*` directories listed in `README.md`.
-
-Fix these in documentation, not by inventing the missing files.
+  skill set is the ten `dsh-plugin-*` directories listed in `README.md`. Fix the
+  stale references; do not invent the missing files.

@@ -5,7 +5,7 @@
  * behaviour and its layout, and receives everything else as props. It never
  * reaches for a service, so it stays testable and re-renderable in isolation.
  *
- * @module @your-scope/dsh-plugin-template/client/settings-page
+ * @module @minhlucvan/dsh-plugin-template/client/settings-page
  */
 
 import type { ReactElement } from 'react'

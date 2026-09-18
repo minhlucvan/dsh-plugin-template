@@ -11,6 +11,24 @@ The baseline source entries are:
 - `src/runtime.ts`: fakeable host boundary and Cordis activation;
 - `src/invariant.ts`: package-owned invariant companion.
 
+The template also ships four optional companions and one browser face. Each
+companion is its own build entry and its own `exports` subpath, injects the
+single host service it needs, and is isolated from the core plugin so a profile
+that does not provide that service can still load the package:
+
+- `src/tools.ts`: registers tools through `ctx.tools`;
+- `src/routes.ts`: serves HTTP endpoints through `ctx.webServer`;
+- `src/commands.ts`: registers a slash command through `ctx.commands`;
+- `src/skills.ts`: contributes a runtime skill through `ctx.skills`;
+- `src/client/`: the browser face — slot registration, locale dictionaries, and
+  the settings model and page.
+
+Resolve each host service through a narrow local interface plus a type guard
+rather than importing the host's service type, and annotate such a lookup as
+`unknown` first when the host's `Context` augmentation lives in a package this
+repository does not depend on — otherwise the lookup is `any`, which is a lint
+error.
+
 Keep the baseline files focused. As the plugin grows, use these project-root
 conventions:
 
@@ -21,7 +39,9 @@ conventions:
 - add `src/<feature>/` for cohesive product capabilities such as commands,
   providers, renderers, or projections;
 - add `src/services/` only when the package actually defines one or more Cordis
-  services.
+  services;
+- add a companion only when the package has that capability, and add its build
+  entry, `exports` subpath, and disposal test together.
 
 Create a directory only when production code needs it. Name feature directories
 after the capability they own rather than copying another plugin's

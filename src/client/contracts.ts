@@ -6,7 +6,7 @@
  * the members this plugin calls, and a composed profile supplies the real
  * services at runtime.
  *
- * @module @your-scope/dsh-plugin-template/client/contracts
+ * @module @minhlucvan/dsh-plugin-template/client/contracts
  */
 
 /** Dictionaries keyed by language tag, then by semantic key. */

@@ -1,7 +1,7 @@
 /**
- * Optional HTTP-route companion for `@your-scope/dsh-plugin-template`.
+ * Optional HTTP-route companion for `@minhlucvan/dsh-plugin-template`.
  *
- * @module @your-scope/dsh-plugin-template/routes
+ * @module @minhlucvan/dsh-plugin-template/routes
  */
 
 import type { IncomingMessage, ServerResponse } from 'node:http'

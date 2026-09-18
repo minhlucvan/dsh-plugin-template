@@ -6,7 +6,7 @@
  * receives everything as props, and every registration is owned by this fiber
  * so disposal is observable.
  *
- * @module @your-scope/dsh-plugin-template/client
+ * @module @minhlucvan/dsh-plugin-template/client
  */
 
 import type { Context } from '@deepseek-ai/cordis'
