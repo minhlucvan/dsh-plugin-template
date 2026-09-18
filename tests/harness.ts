@@ -1,4 +1,4 @@
-import { Context } from 'cordis'
+import { Context } from '@deepseek-ai/cordis'
 import { vi } from 'vitest'
 
 import type { Config as PluginConfig } from '#src/config'

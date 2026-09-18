@@ -8,6 +8,7 @@ export default defineConfig({
   entry: {
     index: 'src/index.ts',
     invariant: 'src/invariant.ts',
+    tools: 'src/tools.ts',
   },
   outDir: 'lib',
   format: ['esm'],

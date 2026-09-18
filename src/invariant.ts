@@ -3,7 +3,7 @@
  * @module @your-scope/dsh-plugin-template/invariant
  */
 
-import type { Context } from 'cordis'
+import type { Context } from '@deepseek-ai/cordis'
 
 const PACKAGE_NAME = '@your-scope/dsh-plugin-template'
 

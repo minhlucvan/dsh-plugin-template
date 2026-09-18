@@ -3,7 +3,7 @@
  * @module @your-scope/dsh-plugin-template/runtime
  */
 
-import type { Context } from 'cordis'
+import type { Context } from '@deepseek-ai/cordis'
 import type { Config } from './config.ts'
 import { resolveConfig } from './config.ts'
 

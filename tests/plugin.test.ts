@@ -1,5 +1,5 @@
 import LoaderPlugin from '@cordisjs/plugin-loader'
-import { Context } from 'cordis'
+import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
 
 import { createPluginHarness } from './harness.ts'
@@ -91,6 +91,32 @@ async function testRegistersInvariantCompanion(): Promise<void> {
   removeService()
 }
 
+function assertToolName(defined: unknown, expected: string): void {
+  if (typeof defined !== 'object' || defined === null || !('name' in defined)) {
+    throw new TypeError('tool companion did not register a tool definition')
+  }
+  expect(defined.name).toBe(expected)
+}
+
+async function testRegistersToolCompanion(): Promise<void> {
+  expect.hasAssertions()
+  const ctx = new Context()
+  const unregister = vi.fn<() => void>()
+  const register = vi.fn<(tool: unknown) => () => void>(() => (): void => {
+    unregister()
+  })
+  const removeService = ctx.provide('tools', { register })
+  const tools = await import('#src/tools')
+
+  const fiber = await ctx.plugin(tools)
+  expect(register).toHaveBeenCalledTimes(EXPECTED_SINGLE_CALL)
+  assertToolName(register.mock.calls[FIRST_INDEX]?.[FIRST_INDEX], 'template_echo')
+
+  await fiber.dispose()
+  expect(unregister).toHaveBeenCalledTimes(EXPECTED_SINGLE_CALL)
+  removeService()
+}
+
 describe('@your-scope/dsh-plugin-template', () => {
   it(
     'preserves the function-plugin namespace through Loader unwrapping',
@@ -114,5 +140,11 @@ describe('@your-scope/dsh-plugin-template', () => {
     'registers the invariant companion through its local host contract',
     { timeout: TEST_TIMEOUT },
     testRegistersInvariantCompanion,
+  )
+
+  it(
+    'registers the tool companion and disposes it with the fiber',
+    { timeout: TEST_TIMEOUT },
+    testRegistersToolCompanion,
   )
 })

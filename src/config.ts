@@ -3,7 +3,7 @@
  * @module @your-scope/dsh-plugin-template/config
  */
 
-import schema from 'schemastery'
+import schema from '@deepseek-ai/schemastery'
 
 /** Plugin configuration supplied by the profile composition. */
 interface Config {
