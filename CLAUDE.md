@@ -43,6 +43,7 @@ Keep each concern in its documented owner instead of letting files sprawl:
 | `src/commands.ts` | Optional `./commands` companion registering a slash command through `ctx.commands` |
 | `src/invariant.ts` | Optional `./invariant` companion for the host `invariants` service |
 | `src/routes.ts` | Optional `./routes` companion serving HTTP endpoints through `ctx.webServer` |
+| `src/skills.ts` | Optional `./skills` companion contributing a runtime skill through `ctx.skills` |
 | `src/tools.ts` | Optional `./tools` companion that registers tools through `ctx.tools` |
 | `src/README.md` | Growth rules for feature modules and services |
 | `tests/harness.ts` | Shared real-Cordis mount with an observable fake host boundary |
@@ -85,18 +86,19 @@ production code needs it.
 
 ## Optional companions
 
-`./commands`, `./invariant`, `./routes` and `./tools` are separate entries so the
-core bundle stays free of the DSH tool stack, the browser carrier and the command
-registry:
+`./commands`, `./invariant`, `./routes`, `./skills` and `./tools` are separate
+entries so the core bundle stays free of the DSH tool stack, the browser carrier,
+the command registry and the skill registry:
 
 - They are built as independent tsdown entries and exported as
-  `@your-scope/dsh-plugin-template/commands`, `.../invariant`, `.../routes` and
-  `.../tools`.
+  `@your-scope/dsh-plugin-template/commands`, `.../invariant`, `.../routes`,
+  `.../skills` and `.../tools`.
 - Each injects the host service it needs (`inject = ['commands']`,
-  `inject = ['invariants']`, `inject = ['webServer']`, `inject = ['tools']`) and
-  resolves it through a narrow local interface plus a type guard, mirroring the
-  pattern in `src/invariant.ts`. This keeps the build independent of host source
-  packages while a composed profile supplies the real service.
+  `inject = ['invariants']`, `inject = ['webServer']`, `inject = ['skills']`,
+  `inject = ['tools']`) and resolves it through a narrow local interface plus a
+  type guard, mirroring the pattern in `src/invariant.ts`. This keeps the build
+  independent of host source packages while a composed profile supplies the real
+  service.
 - `src/routes.ts` annotates its service lookup as `unknown` before the type
   guard, because the host's `webServer` augmentation lives in a package this
   repository does not depend on. Without the annotation the lookup is `any`, and

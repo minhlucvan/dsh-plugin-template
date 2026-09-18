@@ -1,3 +1,15 @@
+/**
+ * Core plugin tests.
+ *
+ * The Loader-facing namespace, the configuration schema, and the activation
+ * behaviour of the minimal plugin. The optional companions are exercised in
+ * `companions.test.ts`, and the browser face in `client*.test.ts`.
+ *
+ * The namespace test is the one that matters most: Cordis Loader unwraps
+ * `exports.default ?? exports`, so a stray default export silently discards
+ * `inject`, `Config` and `apply` together — the plugin would load and do
+ * nothing.
+ */
 import LoaderPlugin from '@cordisjs/plugin-loader'
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
@@ -9,8 +21,6 @@ const EXPECTED_SINGLE_CALL = 1
 const FIRST_INDEX = 0
 const SECOND_INDEX = 1
 const PACKAGE_NAME = '@your-scope/dsh-plugin-template'
-const ROUTE_PATH = '/api/plugin-template/info'
-const COMMAND_NAME = 'plugin-template'
 
 interface PluginExports {
   readonly name: unknown
@@ -97,140 +107,6 @@ async function testRegistersInvariantCompanion(): Promise<void> {
   removeService()
 }
 
-function assertToolName(defined: unknown, expected: string): void {
-  if (typeof defined !== 'object' || defined === null || !('name' in defined)) {
-    throw new TypeError('tool companion did not register a tool definition')
-  }
-  expect(defined.name).toBe(expected)
-}
-
-async function testRegistersToolCompanion(): Promise<void> {
-  expect.hasAssertions()
-  const ctx = new Context()
-  const unregister = vi.fn<() => void>()
-  const register = vi.fn<(tool: unknown) => () => void>(() => (): void => {
-    unregister()
-  })
-  const removeService = ctx.provide('tools', { register })
-  const tools = await import('#src/tools')
-
-  const fiber = await ctx.plugin(tools)
-  expect(register).toHaveBeenCalledTimes(EXPECTED_SINGLE_CALL)
-  assertToolName(
-    register.mock.calls[FIRST_INDEX]?.[FIRST_INDEX],
-    'template_echo',
-  )
-
-  await fiber.dispose()
-  expect(unregister).toHaveBeenCalledTimes(EXPECTED_SINGLE_CALL)
-  removeService()
-}
-
-function assertRoutePath(route: unknown, expected: string): void {
-  if (typeof route !== 'object' || route === null || !('path' in route)) {
-    throw new TypeError('route companion did not register a route')
-  }
-  expect(route.path).toBe(expected)
-}
-
-async function testRegistersRouteCompanion(): Promise<void> {
-  expect.hasAssertions()
-  const ctx = new Context()
-  const unregister = vi.fn<() => void>()
-  const register = vi.fn<(route: unknown) => () => void>(() => (): void => {
-    unregister()
-  })
-  const removeService = ctx.provide('webServer', { register })
-  const routes = await import('#src/routes')
-
-  const fiber = await ctx.plugin(routes)
-  expect(register).toHaveBeenCalledTimes(EXPECTED_SINGLE_CALL)
-  assertRoutePath(register.mock.calls[FIRST_INDEX]?.[FIRST_INDEX], ROUTE_PATH)
-
-  await fiber.dispose()
-  expect(unregister).toHaveBeenCalledTimes(EXPECTED_SINGLE_CALL)
-  removeService()
-}
-
-/** The slice of a command definition these tests read. */
-interface DefinedCommand {
-  name?: unknown
-  handler?: (invocation: { rawInput: string }) => { kind: string; text: string }
-}
-
-/**
- * Narrow a recorded command definition to the shape under test.
- *
- * @param value - The recorded first argument.
- * @returns True when the value carries a handler.
- */
-function isDefinedCommand(value: unknown): value is DefinedCommand {
-  return typeof value === 'object' && value !== null && 'handler' in value
-}
-
-async function testRegistersCommandCompanion(): Promise<void> {
-  expect.hasAssertions()
-  const ctx = new Context()
-  const unregister = vi.fn<() => void>()
-  const register = vi.fn<(definition: unknown) => () => void>(
-    () => (): void => {
-      unregister()
-    },
-  )
-  const removeService = ctx.provide('commands', { register })
-  const commands = await import('#src/commands')
-
-  const fiber = await ctx.plugin(commands)
-  expect(register).toHaveBeenCalledTimes(EXPECTED_SINGLE_CALL)
-
-  const definition: unknown = register.mock.calls[FIRST_INDEX]?.[FIRST_INDEX]
-  if (!isDefinedCommand(definition)) {
-    throw new TypeError(
-      'command companion did not register a command definition',
-    )
-  }
-  expect(definition.name).toBe(COMMAND_NAME)
-
-  await fiber.dispose()
-  expect(unregister).toHaveBeenCalledTimes(EXPECTED_SINGLE_CALL)
-  removeService()
-}
-
-async function testCommandHandlerEchoesAndRefuses(): Promise<void> {
-  expect.hasAssertions()
-  const ctx = new Context()
-  const recorded: unknown[] = []
-  const register = vi.fn<(definition: unknown) => () => void>(
-    (definition: unknown): (() => void) => {
-      recorded.push(definition)
-      return (): void => {
-        // Nothing to release in this fake.
-      }
-    },
-  )
-  const removeService = ctx.provide('commands', { register })
-  const commands = await import('#src/commands')
-  const fiber = await ctx.plugin(commands)
-
-  const definition: unknown = recorded[FIRST_INDEX]
-  if (!isDefinedCommand(definition) || definition.handler === undefined) {
-    throw new TypeError('command companion did not register a handler')
-  }
-
-  /*
-   * Both branches: the echo, and the refusal that keeps an empty invocation from
-   * silently succeeding.
-   */
-  expect(definition.handler({ rawInput: '  hello  ' })).toStrictEqual({
-    kind: 'success',
-    text: `${COMMAND_NAME}: hello`,
-  })
-  expect(definition.handler({ rawInput: '   ' }).kind).toBe('error')
-
-  await fiber.dispose()
-  removeService()
-}
-
 describe('@your-scope/dsh-plugin-template', () => {
   it(
     'preserves the function-plugin namespace through Loader unwrapping',
@@ -254,29 +130,5 @@ describe('@your-scope/dsh-plugin-template', () => {
     'registers the invariant companion through its local host contract',
     { timeout: TEST_TIMEOUT },
     testRegistersInvariantCompanion,
-  )
-
-  it(
-    'registers the tool companion and disposes it with the fiber',
-    { timeout: TEST_TIMEOUT },
-    testRegistersToolCompanion,
-  )
-
-  it(
-    'registers the route companion and disposes it with the fiber',
-    { timeout: TEST_TIMEOUT },
-    testRegistersRouteCompanion,
-  )
-
-  it(
-    'registers the command companion and disposes it with the fiber',
-    { timeout: TEST_TIMEOUT },
-    testRegistersCommandCompanion,
-  )
-
-  it(
-    'echoes command input and refuses an empty invocation',
-    { timeout: TEST_TIMEOUT },
-    testCommandHandlerEchoesAndRefuses,
   )
 })

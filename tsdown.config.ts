@@ -10,6 +10,7 @@ export default defineConfig({
     index: 'src/index.ts',
     invariant: 'src/invariant.ts',
     routes: 'src/routes.ts',
+    skills: 'src/skills.ts',
     tools: 'src/tools.ts',
   },
   outDir: 'lib',

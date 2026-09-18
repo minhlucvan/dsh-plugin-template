@@ -48,6 +48,10 @@
       "types": "./lib/routes.d.ts",
       "default": "./lib/routes.js"
     },
+    "./skills": {
+      "types": "./lib/skills.d.ts",
+      "default": "./lib/skills.js"
+    },
     "./tools": {
       "types": "./lib/tools.d.ts",
       "default": "./lib/tools.js"

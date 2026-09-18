@@ -32,11 +32,13 @@ Normal npm dependencies are resolved from the package registry. A DSH host is a 
 │   ├── invariant.ts              # Package-owned invariant companion
 │   ├── routes.ts                 # HTTP-route companion over ctx.webServer
 │   ├── runtime.ts                # Fakeable host boundary and Cordis activation
+│   ├── skills.ts                 # Runtime skill contribution over ctx.skills
 │   └── tools.ts                  # Tool-registration companion over ctx.tools
 ├── tests/
 │   ├── README.md                 # Harness, feature-test, and snapshot conventions
 │   ├── client.test.ts            # Settings normalization, receiver binding, locale parity
 │   ├── client-registration.test.ts  # Slot registration and fiber disposal
+│   ├── companions.test.ts        # Tool, route, command and skill companions
 │   ├── harness.ts                # Shared real-Cordis test mount
 │   ├── plugin.test.ts            # Loader exports, activation, and companion disposal
 │   └── snapshots/
