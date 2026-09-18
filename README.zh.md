@@ -42,6 +42,8 @@
 │   ├── invariant.ts              # 包自有的 invariant companion
 │   ├── routes.ts                 # 基于 ctx.webServer 的 HTTP route companion
 │   ├── runtime.ts                # 可 fake 的宿主边界与 Cordis 激活
+│   ├── server.ts                 # 自持 listener 的 Fastify companion
+│   ├── server-static.ts          # Fastify 面所用的静态资源规则
 │   ├── skills.ts                 # 基于 ctx.skills 的运行时 skill 贡献
 │   └── tools.ts                  # 基于 ctx.tools 的 tool 注册 companion
 ├── tests/
@@ -53,6 +55,9 @@
 │   ├── companions.test.ts        # tool、route、command 与 skill companion
 │   ├── harness.ts                # 共享的真实 Cordis 测试挂载
 │   ├── plugin.test.ts            # Loader 导出、激活与 companion 销毁
+│   ├── server-static.test.ts     # 静态路径、状态码与 content-type 规则
+│   ├── server.fixtures.ts        # 共享的挂载与 artifact root 辅助
+│   ├── server.test.ts            # 走真实 HTTP 的 Fastify listener
 │   ├── setup-dom.ts              # 组件测试之间的 jsdom 清理
 │   └── snapshots/
 │       └── README.md             # 可选的产品可见 fixture 契约
@@ -207,6 +212,26 @@ invariant companion 通过窄本地接口使用宿主的 `invariants` 服务。�
 
 store 把宿主 scope 当作外部权威:`connectSettingsScope` 把它镜像进来,当表单**干净**时到达的变更会被跟随,而**编辑中**到达的变更会保留已输入文本、只重置基线。保存失败同样保留草稿并记录原因,而不是丢弃用户输入。
 
+### 服务端面:本包自持的 Fastify listener
+
+`./server` 是*服务端*面。`./routes` 把端点落在宿主 carrier 上,而这个 companion 启动并自持一个 Fastify listener —— 自己的绑定地址、自己的端口、经由插件 fiber 的生命周期。两者择一即可,profile 很少同时需要。
+
+```ts
+// profile 组合
+import { apply as server } from '@minhlucvan/dsh-plugin-template/server'
+server(ctx, { port: 8787 })
+```
+
+扩展它之前需要知道三件事:
+
+**React 是被"提供"的,不是被服务端渲染的。** DSH 对浏览器面的做法是:产物预先构建,服务端负责投递它。因此这个面提供 `lib/client.js` 以及加载它的页面,而**不**做服务端渲染。真做 SSR 意味着再塞一个 React 运行时和一棵只在服务端可用的组件树,那不是 DSH 自己前端的交付方式。
+
+**Fastify 是运行时 `dependency`,并且在构建时保持 external。** 构建把它列进 `deps.neverBundle`,因此 `lib/server.js` 里保留真正的 `import 'fastify'`,由消费者解析。这与浏览器面正好相反 —— 后者的依赖会被打包,因为宿主不提供加载器。把它声明成 `devDependency` 会让每个消费者在运行时挂掉;把它打包进去则会带上一份私有副本,其插件无法被共享。
+
+**静态规则对齐 `@deepseek-ai/dsh-host-frontend-static`。** 不存在的路径是 404,越出 artifact root 的遍历是 403,GET/HEAD 以外的方法是 405,无法识别的扩展名以 `application/octet-stream` 下发而不是猜一个类型。这些规则位于 `src/server-static.ts`,不依赖框架与文件系统,因此可直接测试;`src/server.ts` 只是它们之上的薄适配层。注意 Fastify 会从 GET 路由派生 HEAD,所以 HEAD 由 GET 注册来应答,而不是再注册一个 —— 两者同时注册会在启动时抛错。
+
+默认绑定 `127.0.0.1`、默认端口 `0`(由系统分配,启动时打印)。插件自持的 listener 是在宿主 listener 之外的额外暴露,因此放开网卡应当是运维者的显式决定。
+
 ### 最丰富的 slot:右侧栏标签页
 
 本模板演示的 `settings.section` 座位是简单的列表 slot。右侧栏是另一个极端 —— 一个**可停靠的标签页注册表** —— 形态不同,因此在需要之前值得了解。此处只做文档说明,不做演示。
@@ -290,4 +315,4 @@ pnpm pack --dry-run --json
 
 ## 测试指引
 
-自带测试证明 Loader 安全的 ESM 导出与 schema 解析后的激活。把激活断言替换为对每个 registry 贡献的可观察行为与销毁断言。`pnpm test` 运行两个 project,因为包的两半需要不同的运行环境:`node` project 覆盖宿主 entry 与 store(无 DOM),`dom` project 在 `jsdom` 中覆盖 React 组件与 hook。`vitest.config.ts` 里的 `#src/*` alias 对应 manifest 的 `imports` 映射 —— 后者只声明了 `.ts`,无法自行解析 `.tsx` 模块。产品可见插件应在消费它的 DSH 应用中添加真实 Loader/profile 组合测试,而不是只依赖手工挂载的单元测试。
+自带测试证明 Loader 安全的 ESM 导出与 schema 解析后的激活。把激活断言替换为对每个 registry 贡献的可观察行为与销毁断言。`pnpm test` 运行两个 project,因为包的两半需要不同的运行环境:`node` project 覆盖宿主 entry、store 与服务端(无 DOM),`dom` project 在 `jsdom` 中覆盖 React 组件与 hook。服务端套件会在临时端口上绑定真实 listener,并为每个用例把 artifact root 写到临时目录,因此既不依赖先构建,也不会泄漏端口。`vitest.config.ts` 里的 `#src/*` alias 对应 manifest 的 `imports` 映射 —— 后者只声明了 `.ts`,无法自行解析 `.tsx` 模块。产品可见插件应在消费它的 DSH 应用中添加真实 Loader/profile 组合测试,而不是只依赖手工挂载的单元测试。

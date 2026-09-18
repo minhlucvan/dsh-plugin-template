@@ -49,6 +49,10 @@
       "types": "./lib/routes.d.ts",
       "default": "./lib/routes.js"
     },
+    "./server": {
+      "types": "./lib/server.d.ts",
+      "default": "./lib/server.js"
+    },
     "./skills": {
       "types": "./lib/skills.d.ts",
       "default": "./lib/skills.js"
@@ -126,5 +130,8 @@
     "unrun": "^0.3.1",
     "vitest": "^4.1.8",
     "zustand": "^5.0.15"
+  },
+  "dependencies": {
+    "fastify": "^5.12.5"
   }
 }

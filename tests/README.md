@@ -12,6 +12,10 @@ activation, and disposal evidence. The remaining suites own one face each:
 - `tests/client-components.test.tsx`: the provider, hooks, and components in a
   real React tree, in the `dom` project;
 - `tests/client-registration.test.ts`: slot registration and fiber disposal;
+- `tests/server-static.test.ts`: the static path/status/content-type rules, with
+  no listener and no filesystem;
+- `tests/server.test.ts`: the Fastify listener, bound on an ephemeral port and
+  driven over real HTTP through the shared `tests/server.fixtures.ts` mount;
 - `tests/harness.ts`: the shared real-Cordis mount with an observable fake host
   boundary.
 

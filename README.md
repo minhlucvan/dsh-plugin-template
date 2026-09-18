@@ -43,6 +43,8 @@ Normal npm dependencies are resolved from the package registry. A DSH host is a 
 │   ├── invariant.ts              # Package-owned invariant companion
 │   ├── routes.ts                 # HTTP-route companion over ctx.webServer
 │   ├── runtime.ts                # Fakeable host boundary and Cordis activation
+│   ├── server.ts                 # Fastify companion owning its own listener
+│   ├── server-static.ts          # Static-asset rules the Fastify surface applies
 │   ├── skills.ts                 # Runtime skill contribution over ctx.skills
 │   └── tools.ts                  # Tool-registration companion over ctx.tools
 ├── tests/
@@ -54,6 +56,9 @@ Normal npm dependencies are resolved from the package registry. A DSH host is a 
 │   ├── companions.test.ts        # Tool, route, command and skill companions
 │   ├── harness.ts                # Shared real-Cordis test mount
 │   ├── plugin.test.ts            # Loader exports, activation, and companion disposal
+│   ├── server-static.test.ts     # Static path, status, and content-type rules
+│   ├── server.fixtures.ts        # Shared mount and artifact-root helpers
+│   ├── server.test.ts            # Fastify listener over real HTTP
 │   ├── setup-dom.ts              # jsdom cleanup between component tests
 │   └── snapshots/
 │       └── README.md             # Optional product-visible fixture contract
@@ -257,6 +262,47 @@ packages whose services the entry injects:
 }
 ```
 
+### The server surface: a Fastify listener this package owns
+
+`./server` is the *server* face. Where `./routes` seats an endpoint on the host's
+carrier, this companion starts its own Fastify listener and owns it — its own
+bind address, its own port, and its own lifecycle through the plugin fiber. Reach
+for one or the other; a profile rarely wants both.
+
+```ts
+// profile composition
+import { apply as server } from '@minhlucvan/dsh-plugin-template/server'
+server(ctx, { port: 8787 })
+```
+
+Three things to know before extending it:
+
+**React is served, not rendered.** The DSH pattern for a browser face is a built
+artifact plus a server that delivers it, so this surface serves `lib/client.js`
+and the page that loads it — it does not server-render the tree. Doing SSR would
+mean shipping a second React runtime and a component tree that only works on the
+server, which is not how DSH's own frontend is delivered.
+
+**Fastify is a runtime `dependency`, and it stays external.** The build lists it
+in `deps.neverBundle`, so `lib/server.js` keeps a real `import 'fastify'` that the
+consumer resolves. This is the opposite of the browser face, where dependencies
+are bundled because the host supplies no loader for them. Declaring it as a
+`devDependency` would break every consumer at runtime; bundling it would ship a
+private copy whose plugins could not be shared.
+
+**The static rules mirror `@deepseek-ai/dsh-host-frontend-static`.** A missing
+path is 404, a traversal outside the artifact root is 403, a method other than
+GET/HEAD is 405, and an unrecognized extension ships as
+`application/octet-stream` rather than a guessed type. Those rules live in
+`src/server-static.ts` with no framework or filesystem dependency, so they are
+tested directly; `src/server.ts` is a thin adapter over them. Note that Fastify
+derives HEAD from a GET route, so HEAD is answered by the GET registration rather
+than a second one — registering both throws at startup.
+
+The default bind address is `127.0.0.1` and the default port is `0` (whatever the
+OS assigns, logged at startup). A plugin-owned listener is an addition to the
+host's own, so widening the interface is an explicit operator decision.
+
 ### Richest slot: a right-sidebar tab
 
 The `settings.section` seat this template demonstrates is a simple list slot. The
@@ -353,6 +399,6 @@ The final package must contain every runtime and declaration file named by `main
 
 ## Testing guidance
 
-`pnpm test` runs two projects, because the two halves of the package need different worlds: the `node` project covers the host entries and the store (no DOM), and the `dom` project covers the React components and hooks in `jsdom`. The `#src/*` alias in `vitest.config.ts` mirrors the manifest's `imports` map, which is declared for `.ts` only and cannot resolve a `.tsx` module on its own.
+`pnpm test` runs two projects, because the two halves of the package need different worlds: the `node` project covers the host entries, the store, and the server (no DOM), and the `dom` project covers the React components and hooks in `jsdom`. The server suite binds a real listener on an ephemeral port and writes its artifact root to a temporary directory per test, so it neither depends on a build having run nor leaks a port. The `#src/*` alias in `vitest.config.ts` mirrors the manifest's `imports` map, which is declared for `.ts` only and cannot resolve a `.tsx` module on its own.
 
 The included test proves Loader-safe ESM exports and schema-resolved activation. Replace the activation assertions with observable behavior and disposal assertions for every registry contribution. Product-visible plugins should add a real Loader/profile composition test in the consuming DSH application rather than relying only on hand-mounted unit tests.

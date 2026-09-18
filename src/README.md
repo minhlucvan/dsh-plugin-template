@@ -10,6 +10,11 @@ The baseline source entries are:
   types;
 - `src/runtime.ts`: fakeable host boundary and Cordis activation;
 - `src/invariant.ts`: package-owned invariant companion.
+- `src/server.ts`: a Fastify listener this package owns, with its static-asset
+  rules split into `src/server-static.ts` so they stay framework-free and
+  directly testable. Its `fastify` dependency is a runtime `dependency` kept
+  external by the build, unlike the browser face, whose dependencies are
+  bundled.
 
 The template also ships four optional companions and one browser face. Each
 companion is its own build entry and its own `exports` subpath, injects the

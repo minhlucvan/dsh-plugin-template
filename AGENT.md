@@ -52,6 +52,8 @@ Keep each concern in its documented owner instead of letting files sprawl:
 | `src/client/locale.ts` | Feature-owned locale dictionaries |
 | `src/client/settings.ts` | Persisted shape, defaults, and boundary normalization |
 | `src/commands.ts` | Optional `./commands` companion registering a slash command through `ctx.commands` |
+| `src/server.ts` | Optional `./server` companion: a Fastify listener the package owns |
+| `src/server-static.ts` | Static path, status, and content-type rules the server applies (no framework) |
 | `src/invariant.ts` | Optional `./invariant` companion for the host `invariants` service |
 | `src/routes.ts` | Optional `./routes` companion serving HTTP endpoints through `ctx.webServer` |
 | `src/skills.ts` | Optional `./skills` companion contributing a runtime skill through `ctx.skills` |
@@ -64,6 +66,9 @@ Keep each concern in its documented owner instead of letting files sprawl:
 | `tests/client-store.test.ts` | Store transitions and host sync (Node project) |
 | `tests/client-components.test.tsx` | Provider, hooks, and components (jsdom project) |
 | `tests/setup-dom.ts` | jsdom cleanup between component tests |
+| `tests/server-static.test.ts` | Static-rule decisions, tested without a listener |
+| `tests/server.test.ts` | Fastify listener bound on an ephemeral port over real HTTP |
+| `tests/server.fixtures.ts` | Shared mount and artifact-root support for the server suites |
 | `tests/client-registration.test.ts` | Client slot registration and fiber disposal |
 | `tests/snapshots/` | Product-visible fixture contract (currently empty) |
 | `tsdown.config.ts` | Host build entries; add an entry for every new public subpath |
@@ -130,19 +135,20 @@ field means a new hook and component rather than new prop plumbing:
 
 ## Optional companions
 
-`./commands`, `./invariant`, `./routes`, `./skills` and `./tools` are separate
-entries so the core bundle stays free of the DSH tool stack, the browser carrier,
+`./commands`, `./invariant`, `./routes`, `./server`, `./skills` and `./tools` are
+separate entries so the core bundle stays free of the DSH tool stack, the browser carrier,
 the command registry and the skill registry:
 
 - They are built as independent tsdown entries and exported as
   `@minhlucvan/dsh-plugin-template/commands`, `.../invariant`, `.../routes`,
-  `.../skills` and `.../tools`.
-- Each injects the host service it needs (`inject = ['commands']`,
-  `inject = ['invariants']`, `inject = ['webServer']`, `inject = ['skills']`,
-  `inject = ['tools']`) and resolves it through a narrow local interface plus a
-  type guard, mirroring the pattern in `src/invariant.ts`. This keeps the build
-  independent of host source packages while a composed profile supplies the real
-  service.
+  `.../server`, `.../skills` and `.../tools`.
+- All of them except `./server` inject the host service they need
+  (`inject = ['commands']`, `inject = ['invariants']`, `inject = ['webServer']`,
+  `inject = ['skills']`, `inject = ['tools']`) and resolve it through a narrow
+  local interface plus a type guard, mirroring the pattern in
+  `src/invariant.ts`. This keeps the build independent of host source packages
+  while a composed profile supplies the real service. `./server` injects nothing
+  because it owns its own listener instead of seating on the host's.
 - `src/routes.ts` annotates its service lookup as `unknown` before the type
   guard, because the host's `webServer` augmentation lives in a package this
   repository does not depend on. Without the annotation the lookup is `any`, and
@@ -154,6 +160,27 @@ the command registry and the skill registry:
   `peerDependenciesMeta`, and importing its root entry pulls its own peer graph
   (`dsh-scope`, `dsh-llm`, …), which is why those packages appear in
   `devDependencies` for local tests only.
+
+### Server surface
+
+`./server` is the only companion with its own listener, which makes a few things
+different from the rest:
+
+- **Its dependency is a runtime `dependency`, kept external.** `fastify` is in
+  `deps.neverBundle` in `tsdown.config.ts`, so `lib/server.js` keeps a real
+  `import 'fastify'`. Never move it to `devDependencies` (consumers would fail at
+  runtime) and never bundle it (a private copy cannot share plugins). This is the
+  opposite rule from the browser face, whose dependencies *are* bundled.
+- **React is served, not rendered.** Follow `@deepseek-ai/dsh-host-frontend-static`:
+  a missing path is 404, traversal outside the artifact root is 403, non-GET/HEAD
+  is 405, and an unknown extension is `application/octet-stream`.
+- **Keep the rules framework-free.** They live in `src/server-static.ts` so they
+  stay testable without a listener; `src/server.ts` is only the adapter.
+- **Fastify derives HEAD from GET.** Registering an explicit HEAD for a path that
+  already has a GET throws at startup, so read the arriving method in the GET
+  handler instead.
+- **Default to loopback and port `0`.** A plugin-owned listener is an addition to
+  the host's; widening the interface is an operator's explicit choice.
 
 ## Testing
 
