@@ -174,6 +174,65 @@ packages whose services the entry injects:
 }
 ```
 
+### Richest slot: a right-sidebar tab
+
+The `settings.section` seat this template demonstrates is a simple list slot. The
+right sidebar is the other extreme — a **dockable tab registry** — and it is a
+different shape, so it is worth knowing before you need it. It is not demonstrated
+here, only documented.
+
+Registration is **two-stage, and both stages are required**: a tab type with no
+body registered renders the shell's "nothing can view this" notice rather than an
+empty pane.
+
+**Stage one** — what the type is, into `ctx.sidebarRightTabs`:
+
+```ts
+ctx.effect(
+  () =>
+    ctx.sidebarRightTabs.register({
+      id: '@your-scope/dsh-plugin-template',   // unique; the key stage two registers under
+      kind: 'plugin-template-console',         // what openTab names
+      // Omit `patterns` for a page type, which recognizes no address and is
+      // opened by kind. Present, they are VS Code-style globs over scheme:// URIs,
+      // and a pattern containing `:` matches the whole address rather than the path.
+      priority: 'extension',                   // the default, and the band a plugin wants
+      title: () => t('tabTitle'),              // thunked: read fresh, so language changes re-render
+      guide: [{ order: 50, title: () => t('tabTitle'), description: () => t('tabHint') }],
+    }),
+  'client: tab type',
+)
+```
+
+`priority: 'extension'` is the default and the reason a plugin is not a
+second-class viewer: a type that declares nothing outranks every tab type shipped
+with the product, and may take over a `builtin`'s kind until it unregisters. A
+second registration in the same band, or an `id` already in use, throws — the
+registry treats both as wiring mistakes rather than picking one.
+
+**Stage two** — the body, into the **keyed** seat, keyed by stage one's `id`:
+
+```ts
+ctx.effect(
+  () =>
+    ctx.slots.inject('sidebar.right.pane.tab', () =>
+      ctx.slots.register(
+        { name: 'sidebar.right.pane.tab', key: '@your-scope/dsh-plugin-template', locale: NS, store, inject },
+        ConsoleBody,
+      ),
+    ),
+  'client: tab body',
+)
+```
+
+Note `key`, not `id`: a keyed seat is addressed by the definition's identity. The
+body receives every tab of that kind, in every pane, docked or floating.
+
+`sidebar.right.pane.tab.title` is a separate keyed registration for a **live**
+chip — for a type whose title comes from its own store rather than the text
+captured when the tab opened. Omit it and the chip keeps the `title(address)` text
+from open time.
+
 ## Plugin forms
 
 This template demonstrates a function plugin and therefore named exports:
