@@ -78,6 +78,14 @@ Normal npm dependencies are resolved from the package registry. A DSH host is a 
 └── vitest.config.ts              # Test runner configuration
 ```
 
+## Worked example
+
+`examples/ops-console/` is a standalone plugin built from this template that
+exercises every seam it documents — tools with policy guards, a command, a skill,
+host-carrier routes, an owned Fastify listener, and a zustand browser face — plus
+all three things a profile patch layer can do. It is the fastest way to see the
+seams in situ rather than in the abstract; its README is the seam map.
+
 ## Scalable source and test structure
 
 A package may be host-only, client-only, or split across host and browser faces. Keep Loader metadata, configuration, runtime/service boundaries, browser behavior, shared contracts, and tests in the owners appropriate to the package; the template does not require every plugin to copy one fixed directory layout.

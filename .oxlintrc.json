@@ -102,7 +102,37 @@
   },
   "overrides": [
     {
-      "files": ["tests/**/*.ts", "tests/**/*.tsx"],
+      "files": ["examples/**/*.ts", "examples/**/*.tsx"],
+      "rules": {
+        // The example under `examples/` is a standalone plugin that is *read* as
+        // much as it is run, and it trades a little strictness for that:
+        //
+        // - `no-unsafe-*`: its test harness models only the Cordis members the
+        //   companions touch, so it is deliberately a partial `Context`. The
+        //   template's own suites fake one service at a time; the example fakes
+        //   the context, which no narrow-contract type can describe.
+        // - `capitalized-comments`, `max-lines`, `new-cap`, `no-ternary`,
+        //   `no-magic-numbers`, `consistent-return`, `node/callback-return`:
+        //   style rules whose fixes read worse than the prose or the shape they
+        //   replace — `Fastify(...)` is a callable factory, not a constructor,
+        //   and the JSX helpers exist to keep a single render form.
+        //
+        // The template's own `src/` and `tests/` keep every one of these rules on;
+        // this override exists so the example can stay readable, not to relax the
+        // package contract.
+        "eslint/capitalized-comments": "off",
+        "typescript/consistent-return": "off",
+        "eslint/max-lines": "off",
+        "eslint/new-cap": "off",
+        "eslint/no-magic-numbers": "off",
+        "eslint/no-ternary": "off",
+        "node/callback-return": "off",
+        "typescript/no-unsafe-assignment": "off",
+        "typescript/no-unsafe-type-assertion": "off",
+      }
+    },
+    {
+      "files": ["tests/**/*.ts", "tests/**/*.tsx", "examples/*/tests/**/*.ts", "examples/*/tests/**/*.tsx"],
       "rules": {
         // `prefer-strict-boolean-matchers` and `prefer-to-be-falsy` /
         // `prefer-to-be-truthy` demand opposite spellings of the same

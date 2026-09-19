@@ -77,6 +77,7 @@ Keep each concern in its documented owner instead of letting files sprawl:
 | `cordis.patch.yml` | Profile bundle contribution applied over a DSH profile |
 | `.agents/skills/` | Repository-local plugin workflow skills |
 | `docs/dsh-plugin-contracts.md` | Shared contract referenced by the local skills |
+| `examples/ops-console/` | Standalone worked example plugin; reuses this toolchain, never packed |
 
 Add cohesive product capabilities as `src/<feature>/`, and `src/services/` only
 when the package actually defines Cordis services. Create a directory only when
@@ -180,6 +181,19 @@ different from the rest:
   handler instead.
 - **Default to loopback and port `0`.** A plugin-owned listener is an addition to
   the host's; widening the interface is an operator's explicit choice.
+
+## The worked example
+
+`examples/ops-console/` is a complete plugin built from this template, and it is
+the reference for what the seams look like in practice. Two rules keep it honest:
+
+- It is **not part of the package**: `private: true`, outside `files`, and its
+  own `lib/` is ignored. Changing it must not change what is packed.
+- It holds the template's correctness bar (it builds, typechecks, and its suites
+  run in `pnpm test`) but suppresses several style and strict-typing rules under
+  `examples/**` in `.oxlintrc.json`, each with a written reason. Do not extend
+  those suppressions to `src/` or `tests/`; if you need a rule off for the
+  template itself, change it deliberately and say why.
 
 ## Testing
 

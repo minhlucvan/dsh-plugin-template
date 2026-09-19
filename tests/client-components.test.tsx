@@ -11,14 +11,11 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactElement } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  SettingsStoreProvider,
-  useSettingsStore,
-} from '#src/client/context.tsx'
+import { SettingsStoreProvider, useSettingsStore } from '#src/client/context'
 import type { SettingsScope } from '#src/client/contracts'
 import { useSettings } from '#src/client/hooks'
 import type { ClientSettings } from '#src/client/settings'
-import { SettingsPage } from '#src/client/settings-page.tsx'
+import { SettingsPage } from '#src/client/settings-page'
 
 const TEST_TIMEOUT = 5000
 const EXPECTED_SINGLE_CALL = 1

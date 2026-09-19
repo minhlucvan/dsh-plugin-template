@@ -1,0 +1,93 @@
+# Bundle patch for the ops-console example.
+#
+# This file is the example's most important teaching artifact: it shows the
+# three things a patch layer can do to a DSH profile, and nothing else.
+#
+#   1. insert  — add plugin rows (each optional companion is its own row, so a
+#                profile can take the policy without the browser face);
+#   2. retarget — address an EXISTING row by id to replace its whole `config`;
+#   3. disable — turn an existing row off.
+#
+# Two rules decide whether this file works, and both are counter-intuitive:
+#
+#   * A patch REPLACES the targeted row's entire `config`. It does not merge. Any
+#     key you want to keep must be restated in full, which is why the retarget
+#     below repeats `mode` rather than only naming `maxParallelSubCalls`.
+#   * The user's own profile `cordis.patch.yml`, and any `--patch` overlay, are
+#     applied AFTER this file, so a deployment can override every value here.
+#     Write rows to be overridable rather than to be final.
+
+- insert:
+    # The core plugin: one row, no host services, always safe to mount.
+    - id: ops-console
+      name: '@minhlucvan/dsh-plugin-ops-console'
+      config:
+        message: ops-console example loaded
+        deniedTools: [bash, write]
+        # sandboxRoot is intentionally unset here. Leaving containment off is the
+        # honest default for a template: an operator turns it on for a workspace.
+        commandName: ops
+        port: 0
+
+    # The tools row. Separate from the core so a profile can mount the command
+    # and the browser face without giving the model new tools.
+    - id: ops-console-tools
+      name: '@minhlucvan/dsh-plugin-ops-console/tools'
+
+    # Policy enforcement. This is the row that reads deniedTools above; without
+    # it the tools still register and nothing is refused.
+    - id: ops-console-policy
+      name: '@minhlucvan/dsh-plugin-ops-console/policy'
+      config:
+        deniedTools: [bash, write]
+        sandboxRoot: /workspace
+
+    # Operator surface: the /ops slash command and the routing skill.
+    - id: ops-console-commands
+      name: '@minhlucvan/dsh-plugin-ops-console/commands'
+    - id: ops-console-skills
+      name: '@minhlucvan/dsh-plugin-ops-console/skills'
+
+    # HTTP on the HOST's carrier. Inherits the host's trust fence, so this is the
+    # surface the browser half fetches from.
+    - id: ops-console-routes
+      name: '@minhlucvan/dsh-plugin-ops-console/routes'
+
+    # A listener this package owns, on its own port. Commented out by default:
+    # binding a port is an explicit operator decision, and a plugin that binds one
+    # without being asked is a plugin that surprises its host.
+    # - id: ops-console-server
+    #   name: '@minhlucvan/dsh-plugin-ops-console/server'
+    #   config:
+    #     port: 8787
+    #     host: 127.0.0.1
+
+    # The browser roster entry. `dsh.client` (in package.json) declares that this
+    # package HAS a browser face; this row is what mounts it.
+    - id: ops-console-client
+      name: '@minhlucvan/dsh-plugin-ops-console/client'
+
+# ── retarget an existing row ────────────────────────────────────────────────
+#
+# Addressing the tool runtime the host already composed. Because a patch
+# replaces the whole `config`, every key this row owns is restated — including
+# `mode`, which the host left to its schema default. Omitting it here would not
+# "leave it alone"; it would clear it.
+#
+# This is also the example's most deployment-specific line: it raises the PTC
+# sub-call ceiling, which only matters to a deployment running the tool runtime
+# in `ptc` mode. Keep it commented unless you want that.
+#
+# - id: tools
+#   config:
+#     mode: native
+#     maxParallelSubCalls: 16
+
+# ── disable an existing row ────────────────────────────────────────────────
+#
+# The narrowest possible customization: turn something off without touching any
+# code. Left commented because disabling another plugin's row is exactly the kind
+# of change that should be visible in a diff.
+#
+# - id: message-feedback
+#   disabled: true
